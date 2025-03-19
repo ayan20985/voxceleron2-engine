@@ -460,8 +460,8 @@ void Tetra::World::populate_chunk_pass_2(Chunk *chunk)
 				uint8_t voxel_material{chunk->get_voxel_material(voxel_index)};
 				float depth{offset.y+translation.y+chunk->get_translation().y+voxel_y};
 
-				//Water
-				if(depth > 0 && voxel_material == NULL)
+				//Water - modified to require higher depth for water (reduced water amount)
+				if(depth > 5 && voxel_material == NULL)
 				{
 					chunk->set_voxel_material(voxel_index, Materials::WATER);
 					voxel_material = chunk->get_voxel_material(voxel_index);
