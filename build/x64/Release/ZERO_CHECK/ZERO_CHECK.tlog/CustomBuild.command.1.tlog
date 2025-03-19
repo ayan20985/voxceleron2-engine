@@ -1,0 +1,10 @@
+^C:\VOXCELERON2-ENGINE\BUILD\CMAKEFILES\FF076B14632C957D647E83604AC074DD\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/voxceleron2-engine -BC:/voxceleron2-engine/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/voxceleron2-engine/build/voxceleron2.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

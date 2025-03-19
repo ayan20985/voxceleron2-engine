@@ -1,0 +1,3 @@
+C:/voxceleron2-engine/build/CMakeFiles/voxceleron2.dir
+C:/voxceleron2-engine/build/CMakeFiles/ALL_BUILD.dir
+C:/voxceleron2-engine/build/CMakeFiles/ZERO_CHECK.dir
