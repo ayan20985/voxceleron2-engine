@@ -1,0 +1,35 @@
+C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\FastNoiseSIMD.obj
+C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD_internal.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\FastNoiseSIMD_internal.obj
+C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD_sse2.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\FastNoiseSIMD_sse2.obj
+C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD_sse41.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\FastNoiseSIMD_sse41.obj
+C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD_avx2.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\FastNoiseSIMD_avx2.obj
+C:\voxceleron2-engine\src\Tetra\Chunk.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Chunk.obj
+C:\voxceleron2-engine\src\Tetra\Main.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Main.obj
+C:\voxceleron2-engine\src\Tetra\Render Group.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Render Group.obj
+C:\voxceleron2-engine\src\Tetra\World.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\World.obj
+C:\voxceleron2-engine\src\Oreginum\Camera.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Camera.obj
+C:\voxceleron2-engine\src\Oreginum\Core.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Core.obj
+C:\voxceleron2-engine\src\Oreginum\Keyboard.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Keyboard.obj
+C:\voxceleron2-engine\src\Oreginum\Main Renderer.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Main Renderer.obj
+C:\voxceleron2-engine\src\Oreginum\Mouse.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Mouse.obj
+C:\voxceleron2-engine\src\Oreginum\Renderable.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Renderable.obj
+C:\voxceleron2-engine\src\Oreginum\Renderer Core.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Renderer Core.obj
+C:\voxceleron2-engine\src\Oreginum\Texture.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Texture.obj
+C:\voxceleron2-engine\src\Oreginum\Window.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Window.obj
+C:\voxceleron2-engine\src\Vulkan\Buffer.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Buffer.obj
+C:\voxceleron2-engine\src\Vulkan\Command Buffer.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Command Buffer.obj
+C:\voxceleron2-engine\src\Vulkan\Command Pool.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Command Pool.obj
+C:\voxceleron2-engine\src\Vulkan\Descriptor Pool.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Descriptor Pool.obj
+C:\voxceleron2-engine\src\Vulkan\Descriptor Set.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Descriptor Set.obj
+C:\voxceleron2-engine\src\Vulkan\Device.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Device.obj
+C:\voxceleron2-engine\src\Vulkan\Fence.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Fence.obj
+C:\voxceleron2-engine\src\Vulkan\Framebuffer.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Framebuffer.obj
+C:\voxceleron2-engine\src\Vulkan\Image.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Image.obj
+C:\voxceleron2-engine\src\Vulkan\Instance.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Instance.obj
+C:\voxceleron2-engine\src\Vulkan\Pipeline.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Pipeline.obj
+C:\voxceleron2-engine\src\Vulkan\Render Pass.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Render Pass.obj
+C:\voxceleron2-engine\src\Vulkan\Sampler.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Sampler.obj
+C:\voxceleron2-engine\src\Vulkan\Semaphore.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Semaphore.obj
+C:\voxceleron2-engine\src\Vulkan\Shader.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Shader.obj
+C:\voxceleron2-engine\src\Vulkan\Surface.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Surface.obj
+C:\voxceleron2-engine\src\Vulkan\Swapchain.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Swapchain.obj

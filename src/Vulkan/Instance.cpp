@@ -64,9 +64,10 @@ void Oreginum::Vulkan::Instance::swap(Instance *other)
 
 void Oreginum::Vulkan::Instance::create_debug_callback()
 {
-	vk::DebugReportCallbackCreateInfoEXT debug_callback_information
-	{vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning |
-		vk::DebugReportFlagBitsEXT::ePerformanceWarning, debug_callback_function};
+	vk::DebugReportCallbackCreateInfoEXT debug_callback_information;
+	debug_callback_information.flags = vk::DebugReportFlagBitsEXT::eError | 
+		vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning;
+	debug_callback_information.pfnCallback = reinterpret_cast<vk::PFN_DebugReportCallbackEXT>(debug_callback_function);
 
 	if(instance->createDebugReportCallbackEXT(&debug_callback_information,
 		nullptr, &debug_callback) != vk::Result::eSuccess)

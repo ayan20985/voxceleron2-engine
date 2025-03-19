@@ -13,7 +13,9 @@ Oreginum::Vulkan::Buffer::Buffer(std::shared_ptr<const Device> device,
 	create_buffer(buffer.get(), &buffer_memory, size, usage |
 		vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eDeviceLocal);
 	if(data) write(data, size);
-	descriptor_information = {*buffer, 0, uniform_size ? uniform_size : size};
+	descriptor_information.buffer = *buffer;
+	descriptor_information.offset = 0;
+	descriptor_information.range = uniform_size ? uniform_size : size;
 }
 
 Oreginum::Vulkan::Buffer::~Buffer()

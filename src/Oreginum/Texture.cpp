@@ -2,7 +2,7 @@
 #include "Renderer Core.hpp"
 #include "Texture.hpp"
 #define STB_IMAGE_IMPLEMENTATION
-#include <STB IMAGE/stb_image.h>
+#include <stb_image.h>
 
 Oreginum::Texture::Texture(const std::vector<std::string>& paths, const Vulkan::Sampler& sampler,
 	Format type, bool cubemap) : type(type)

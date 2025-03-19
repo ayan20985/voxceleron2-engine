@@ -1,5 +1,7 @@
 #include <GLM/gtc/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <GLM/gtx/quaternion.hpp>
+#include <GLM/gtx/component_wise.hpp>
 #include "Core.hpp"
 #include "Window.hpp"
 #include "Keyboard.hpp"

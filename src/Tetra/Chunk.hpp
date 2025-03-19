@@ -1,4 +1,8 @@
 #pragma once
+#include <vector>
+#include <array>
+#include <unordered_map>
+#define GLM_ENABLE_EXPERIMENTAL
 #include "Common.hpp"
 #include "Render Group.hpp"
 

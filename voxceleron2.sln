@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "voxceleron2", "voxceleron2.vcxproj", "{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}.Debug|x64.ActiveCfg = Debug|x64
+		{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}.Debug|x64.Build.0 = Debug|x64
+		{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}.Debug|x86.ActiveCfg = Debug|Win32
+		{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}.Debug|x86.Build.0 = Debug|Win32
+		{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}.Release|x64.ActiveCfg = Release|x64
+		{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}.Release|x64.Build.0 = Release|x64
+		{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}.Release|x86.ActiveCfg = Release|Win32
+		{EFCB5CA3-A4F5-4D22-A6C2-78A4B9D9C6C1}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E82B9A4C-DAFA-4C47-8A2D-2F72B05C8A8E}
+	EndGlobalSection
+EndGlobal 
