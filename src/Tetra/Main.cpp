@@ -13,8 +13,8 @@ int WinMain(HINSTANCE current, HINSTANCE previous, LPSTR arguments, int show)
 	SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 
-	//Initialize
-	Oreginum::Core::initialize("Voxceleron2", {1280, 720}, false);
+	//Initialize (enable terminal for logger output)
+	Oreginum::Core::initialize("Voxceleron2", {1280, 720}, false, true);
 	Tetra::World world{};
 
 	//Main loop

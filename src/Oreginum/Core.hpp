@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <GLM/glm.hpp>
+#include "Logger.hpp"
 
 namespace Oreginum
 {

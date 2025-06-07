@@ -8,6 +8,7 @@
 #include "Camera.hpp"
 #include "Core.hpp"
 #include "Main Renderer.hpp"
+#include "Logger.hpp"
 
 namespace
 {
@@ -17,6 +18,7 @@ namespace
 	float minimum_delta;
 	static double initial_time;
 	bool vsync, debug;
+	bool console_allocated = false;
 
 	double time_since_epoch(){ return std::chrono::duration_cast<std::chrono::microseconds>
 		(std::chrono::high_resolution_clock::now().time_since_epoch()).count()/1000000.; }
@@ -27,6 +29,30 @@ void Oreginum::Core::initialize(const std::string& title,
 {
 	::vsync = vsync;
 	::debug = debug;
+	
+	// Allocate console if requested
+	if (terminal) {
+		AllocConsole();
+		console_allocated = true;
+		FILE* pCout;
+		freopen_s(&pCout, "CONOUT$", "w", stdout);
+		FILE* pCin;
+		freopen_s(&pCin, "CONIN$", "r", stdin);
+		FILE* pCerr;
+		freopen_s(&pCerr, "CONOUT$", "w", stderr);
+		std::ios::sync_with_stdio(true);
+		std::wcout.clear();
+		std::cout.clear();
+		std::wcerr.clear();
+		std::cerr.clear();
+		std::wcin.clear();
+		std::cin.clear();
+	}
+	
+	// Initialize logger
+	Logger::set_enabled(true);
+	Logger::info("Initializing Voxceleron2 Engine...");
+	
 	//srand(static_cast<unsigned>(time(NULL)));
 	screen_resolution = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)};
 	DEVMODE devmode;
@@ -35,20 +61,39 @@ void Oreginum::Core::initialize(const std::string& title,
 	minimum_delta = 1.f/get_refresh_rate();
 	initial_time = time_since_epoch();
 
+	Logger::info("Screen resolution: " + std::to_string(screen_resolution.x) + "x" + std::to_string(screen_resolution.y));
+	Logger::info("Refresh rate: " + std::to_string(refresh_rate) + "Hz");
+
 	Window::initialize(title, resolution, terminal);
+	Logger::info("Window initialized");
+	
 	Mouse::initialize();
+	Logger::info("Mouse system initialized");
+	
 	Renderer_Core::initialize();
+	Logger::info("Renderer core initialized");
+	
+	Logger::info("Engine initialization complete");
 }
 
 void Oreginum::Core::destroy()
 {
+	Logger::info("Shutting down engine...");
 	Mouse::destroy();
 	Window::destroy();
 	Renderer_Core::get_device()->get().waitIdle();
+	
+	// Clean up console if we allocated it
+	if (console_allocated) {
+		Logger::info("Engine shutdown complete. Press any key to close console...");
+		std::cin.get();
+		FreeConsole();
+	}
 }
 
 void Oreginum::Core::error(const std::string& error)
 {
+	Logger::excep("FATAL ERROR: " + error);
 	destroy();
 	MessageBox(NULL, error.c_str(), "Oreginum Engine Error", MB_ICONERROR);
 	std::exit(EXIT_FAILURE);
