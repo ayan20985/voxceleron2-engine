@@ -10,10 +10,19 @@ namespace Oreginum
     // Static member definitions
     std::mutex Logger::output_mutex;
     bool Logger::enabled = true;
+    Logger::Verbosity Logger::verbosity_level = Logger::Verbosity::NORMAL;
 
-    void Logger::log(Level level, const std::string& message)
+    void Logger::log(Level level, const std::string& message, bool is_critical)
     {
         if (!enabled) return;
+
+        // Filter based on verbosity level
+        if (level == Level::INFO && !is_critical) {
+            // For non-critical info messages, check verbosity
+            if (verbosity_level == Verbosity::MINIMAL) return;
+            if (verbosity_level == Verbosity::NORMAL && message.find("Destroying") != std::string::npos) return;
+            if (verbosity_level == Verbosity::NORMAL && message.find("destructor") != std::string::npos) return;
+        }
 
         std::lock_guard<std::mutex> lock(output_mutex);
         
@@ -27,19 +36,19 @@ namespace Oreginum
         output_to_console(formatted.str());
     }
 
-    void Logger::info(const std::string& message)
+    void Logger::info(const std::string& message, bool is_critical)
     {
-        log(Level::INFO, message);
+        log(Level::INFO, message, is_critical);
     }
 
     void Logger::warn(const std::string& message)
     {
-        log(Level::WARN, message);
+        log(Level::WARN, message, true);
     }
 
     void Logger::excep(const std::string& message)
     {
-        log(Level::EXCEP, message);
+        log(Level::EXCEP, message, true);
     }
 
     void Logger::set_enabled(bool enable)
@@ -51,6 +60,17 @@ namespace Oreginum
     bool Logger::is_enabled()
     {
         return enabled;
+    }
+
+    void Logger::set_verbosity(Verbosity level)
+    {
+        std::lock_guard<std::mutex> lock(output_mutex);
+        verbosity_level = level;
+    }
+
+    Logger::Verbosity Logger::get_verbosity()
+    {
+        return verbosity_level;
     }
 
     std::string Logger::get_timestamp()

@@ -8,7 +8,8 @@ namespace Oreginum
 	namespace Core
 	{
 		void initialize(const std::string& title, const glm::ivec2& resolution,
-			bool vsync = true, bool terminal = false, bool debug = false);
+			bool vsync = true, bool terminal = false, bool debug = false, 
+			Logger::Verbosity log_verbosity = Logger::Verbosity::NORMAL);
 		void destroy();
 
 		void error(const std::string& error);
@@ -19,5 +20,7 @@ namespace Oreginum
 		float get_time();
 		float get_delta();
 		bool get_debug();
+		void set_log_verbosity(Logger::Verbosity level);
+		Logger::Verbosity get_log_verbosity();
 	}
 }

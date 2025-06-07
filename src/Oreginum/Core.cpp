@@ -19,16 +19,19 @@ namespace
 	static double initial_time;
 	bool vsync, debug;
 	bool console_allocated = false;
+	Oreginum::Logger::Verbosity log_verbosity = Oreginum::Logger::Verbosity::NORMAL;
 
 	double time_since_epoch(){ return std::chrono::duration_cast<std::chrono::microseconds>
 		(std::chrono::high_resolution_clock::now().time_since_epoch()).count()/1000000.; }
 };
 
 void Oreginum::Core::initialize(const std::string& title,
-	const glm::ivec2& resolution, bool vsync, bool terminal, bool debug)
+	const glm::ivec2& resolution, bool vsync, bool terminal, bool debug, 
+	Logger::Verbosity log_verbosity)
 {
 	::vsync = vsync;
 	::debug = debug;
+	::log_verbosity = log_verbosity;
 	
 	// Allocate console if requested
 	if (terminal) {
@@ -51,7 +54,8 @@ void Oreginum::Core::initialize(const std::string& title,
 	
 	// Initialize logger
 	Logger::set_enabled(true);
-	Logger::info("Initializing Voxceleron2 Engine...");
+	Logger::set_verbosity(log_verbosity);
+	Logger::info("Initializing Voxceleron2 Engine...", true);
 	
 	//srand(static_cast<unsigned>(time(NULL)));
 	screen_resolution = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)};
@@ -61,31 +65,31 @@ void Oreginum::Core::initialize(const std::string& title,
 	minimum_delta = 1.f/get_refresh_rate();
 	initial_time = time_since_epoch();
 
-	Logger::info("Screen resolution: " + std::to_string(screen_resolution.x) + "x" + std::to_string(screen_resolution.y));
-	Logger::info("Refresh rate: " + std::to_string(refresh_rate) + "Hz");
+	Logger::info("Screen resolution: " + std::to_string(screen_resolution.x) + "x" + std::to_string(screen_resolution.y), true);
+	Logger::info("Refresh rate: " + std::to_string(refresh_rate) + "Hz", true);
 
 	Window::initialize(title, resolution, terminal);
-	Logger::info("Window initialized");
+	Logger::info("Window initialized", true);
 	
 	Mouse::initialize();
-	Logger::info("Mouse system initialized");
+	Logger::info("Mouse system initialized", true);
 	
 	Renderer_Core::initialize();
-	Logger::info("Renderer core initialized");
+	Logger::info("Renderer core initialized", true);
 	
-	Logger::info("Engine initialization complete");
+	Logger::info("Engine initialization complete", true);
 }
 
 void Oreginum::Core::destroy()
 {
-	Logger::info("Shutting down engine...");
+	Logger::info("Shutting down engine...", true);
 	Mouse::destroy();
 	Window::destroy();
 	Renderer_Core::get_device()->get().waitIdle();
 	
 	// Clean up console if we allocated it
 	if (console_allocated) {
-		Logger::info("Engine shutdown complete. Press any key to close console...");
+		Logger::info("Engine shutdown complete. Press any key to close console...", true);
 		std::cin.get();
 		FreeConsole();
 	}
@@ -132,3 +136,14 @@ float Oreginum::Core::get_time(){ return static_cast<float>(time_since_epoch()-i
 float Oreginum::Core::get_delta(){ return delta; }
 
 bool Oreginum::Core::get_debug(){ return debug; }
+
+void Oreginum::Core::set_log_verbosity(Logger::Verbosity level)
+{
+	log_verbosity = level;
+	Logger::set_verbosity(level);
+}
+
+Oreginum::Logger::Verbosity Oreginum::Core::get_log_verbosity()
+{
+	return log_verbosity;
+}

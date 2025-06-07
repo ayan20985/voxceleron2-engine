@@ -7,6 +7,7 @@
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
 #include "Camera.hpp"
+#include "Logger.hpp"
 
 namespace
 {
@@ -40,6 +41,7 @@ void Oreginum::Camera::update()
 	glm::fvec2 cursor_delta{-glm::fvec2{Mouse::get_delta()}*SENSITIVITY};
 	if(glm::length(cursor_delta) && Mouse::is_locked())
 	{
+		float old_yaw = yaw, old_pitch = pitch;
 		yaw += cursor_delta.x;
 		pitch += cursor_delta.y;
 		if(pitch > pitch_limit) pitch = pitch_limit;
@@ -49,13 +51,32 @@ void Oreginum::Camera::update()
 			glm::angleAxis(pitch, world_right), world_forward));
 		right = glm::normalize(glm::cross(direction, world_up));
 		forward = glm::normalize(direction*glm::fvec3{1, 0, 1});
+		
+		// Log significant camera rotation changes
+		if(abs(old_yaw - yaw) > 0.1f || abs(old_pitch - pitch) > 0.1f)
+		{
+			Logger::info("Camera rotated - Yaw: " + std::to_string(glm::degrees(yaw)) +
+						"°, Pitch: " + std::to_string(glm::degrees(pitch)) + "°");
+		}
 	}
 
+	glm::fvec3 old_position = position;
 	float velocity{(GetAsyncKeyState(VK_LSHIFT) ? RUN_SPEED : WALK_SPEED)*Core::get_delta()};
+	bool running = GetAsyncKeyState(VK_LSHIFT);
+	
 	if(Keyboard::is_held(Key::W)) position += direction*velocity;
 	if(Keyboard::is_held(Key::S)) position -= direction*velocity;
 	if(Keyboard::is_held(Key::A)) position -= right*velocity;
 	if(Keyboard::is_held(Key::D)) position += right*velocity;
+	
+	// Log significant position changes
+	glm::fvec3 movement = position - old_position;
+	if(glm::length(movement) > 1.0f)
+	{
+		Logger::info("Camera moved to (" + std::to_string(position.x) + ", " +
+					std::to_string(position.y) + ", " + std::to_string(position.z) +
+					") - " + std::string(running ? "Running" : "Walking"));
+	}
 
 	view = glm::lookAt(position, position+direction, world_up);
 
@@ -64,9 +85,18 @@ void Oreginum::Camera::update()
 	projection[1][1] *= -1;
 }
 
-void Oreginum::Camera::set_frozen(bool frozen){ ::frozen = frozen; }
+void Oreginum::Camera::set_frozen(bool frozen)
+{
+	Logger::info("Camera freeze state changed: " + std::string(frozen ? "frozen" : "active"));
+	::frozen = frozen;
+}
 
-void Oreginum::Camera::set_position(const glm::fvec3& position){ ::position = position; }
+void Oreginum::Camera::set_position(const glm::fvec3& position)
+{
+	Logger::info("Camera position set to (" + std::to_string(position.x) + ", " +
+				std::to_string(position.y) + ", " + std::to_string(position.z) + ")");
+	::position = position;
+}
 
 float Oreginum::Camera::get_fov(){ return FOV; }
 

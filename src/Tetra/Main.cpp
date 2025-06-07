@@ -14,7 +14,12 @@ int WinMain(HINSTANCE current, HINSTANCE previous, LPSTR arguments, int show)
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 
 	//Initialize (enable terminal for logger output)
-	Oreginum::Core::initialize("Voxceleron2", {1280, 720}, false, true);
+	Oreginum::Core::initialize("Voxceleron2", {1280, 720}, false, true, false, Oreginum::Logger::Verbosity::MINIMAL);
+	
+	// Use Verbosity::MINIMAL for release builds to reduce noise
+	// Use Verbosity::NORMAL for development with moderate logging
+	// Use Verbosity::VERBOSE only when debugging specific issues
+	
 	Tetra::World world{};
 
 	//Main loop

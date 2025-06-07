@@ -1,5 +1,6 @@
 #include <iostream>
 #include "../Oreginum/Core.hpp"
+#include "../Oreginum/Logger.hpp"
 #include "Buffer.hpp"
 #include "Image.hpp"
 
@@ -11,6 +12,11 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 	const std::vector<void *>& datas, vk::Format format, bool cubemap)
 	: device(device), resolution(resolution), aspect(vk::ImageAspectFlagBits::eColor)
 {
+	Logger::info("Creating Vulkan image: " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y) +
+		", format " + std::to_string(static_cast<int>(format)) +
+		", layers " + std::to_string(datas.size()) +
+		", cubemap " + (cubemap ? "true" : "false"));
+
 	unsigned CHANNELS{format == MONOCHROME_FORMAT ? 1U : 4U};
 	const bool HDR32{format == Vulkan::Image::HDR_FORMAT_32};
 	const unsigned BYTES_PER_PIXEL{HDR32 ? CHANNELS*4 : CHANNELS};
@@ -18,10 +24,20 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 	mip_levels = static_cast<uint8_t>(floor(log2(std::max(resolution.x, resolution.y))));
 	const bool ARRAY_2D{datas.size() > 1 && !cubemap};
 
+	Logger::info("Image properties: " + std::to_string(CHANNELS) + " channels, " +
+		std::to_string(BYTES_PER_PIXEL) + " bytes per pixel, " +
+		std::to_string(mip_levels) + " mip levels, " +
+		(HDR32 ? "HDR32" : "LDR") + " format");
+
+	Logger::info("Creating staging images for " + std::to_string(LAYERS) + " layers");
 	std::vector<std::pair<vk::Image, vk::DeviceMemory>> stages;
-	for(const void *d : datas)
+	for(size_t layer_idx = 0; layer_idx < datas.size(); ++layer_idx)
 	{
+		const void *d = datas[layer_idx];
+		Logger::info("Processing layer " + std::to_string(layer_idx));
+
 		//Create stage image
+		Logger::info("Creating staging image for layer " + std::to_string(layer_idx));
 		vk::Image stage_image{create_image(*device, {resolution.x, resolution.y}, 1,
 			vk::ImageUsageFlagBits::eTransferSrc, format, aspect, 1, vk::ImageTiling::eLinear)};
 		vk::DeviceMemory stage_image_memory{create_and_bind_image_memory(
@@ -30,9 +46,12 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 
 		//Copy datas to stage image
 		uint32_t size{resolution.x*resolution.y*BYTES_PER_PIXEL};
+		Logger::info("Mapping staging image memory: " + std::to_string(size) + " bytes");
 		auto result{device->get().mapMemory(stage_image_memory, 0, size)};
-		if(result.result != vk::Result::eSuccess)
+		if(result.result != vk::Result::eSuccess) {
+			Logger::excep("Failed to map staging image memory: VkResult " + std::to_string(static_cast<int>(result.result)));
 			Core::error("Could not map Vulkan image stage memory.");
+		}
 
 		vk::ImageSubresource image_subresource{aspect, 0, 0};
 		vk::SubresourceLayout stage_image_layout{
@@ -57,11 +76,13 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 			}
 		}
 
+		Logger::info("Copying data to staging image for layer " + std::to_string(layer_idx));
 		device->get().unmapMemory(stage_image_memory);
 		stages.push_back({stage_image, stage_image_memory});
 	}
 	
 	//Create image
+	Logger::info("Creating main image with optimal tiling");
 	image = create_image(*device, {resolution.x, resolution.y}, mip_levels,
 		vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst |
 		vk::ImageUsageFlagBits::eSampled, format, vk::ImageAspectFlagBits::eColor,
@@ -69,6 +90,7 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 	image_memory = create_and_bind_image_memory(*device, image);
 
 	//Transition image to use as copy destination
+	Logger::info("Transitioning main image to transfer destination layout");
 	transition(temporary_command_buffer, image, aspect,
 		vk::ImageLayout::ePreinitialized, vk::ImageLayout::eTransferDstOptimal,
 		vk::AccessFlagBits::eHostWrite, vk::AccessFlagBits::eTransferWrite,
@@ -76,8 +98,11 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 		0, LAYERS, 0, 1);
 
 	//Copy stage images to image
+	Logger::info("Copying staging images to main image and generating mipmaps");
 	for(uint32_t i{}; i < LAYERS; ++i)
 	{
+		Logger::info("Processing layer " + std::to_string(i) + " for mipmap generation");
+
 		//Transition to use as copy source
 		transition(temporary_command_buffer, stages[i].first, aspect,
 			vk::ImageLayout::ePreinitialized, vk::ImageLayout::eTransferSrcOptimal,
@@ -95,6 +120,7 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 			i, 1, 0, 1);
 
 		//Mipmap blit
+		Logger::info("Generating " + std::to_string(mip_levels - 1) + " mipmap levels for layer " + std::to_string(i));
 		for(uint32_t j{1}; j < mip_levels; ++j)
 		{
 			vk::ImageBlit image_blit;
@@ -137,6 +163,7 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 	}
 
 	//Final transition
+	Logger::info("Final transition to shader read-only layout");
 	transition(temporary_command_buffer, image, aspect,
 		vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
 		vk::AccessFlagBits::eTransferRead, vk::AccessFlagBits::eShaderRead,
@@ -144,17 +171,21 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 		0, LAYERS, 0, mip_levels);
 
 	//Create image view
-	create_image_view(format, aspect, LAYERS, mip_levels, cubemap ? vk::ImageViewType::eCube :
-		ARRAY_2D ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D);
+	vk::ImageViewType view_type = cubemap ? vk::ImageViewType::eCube :
+		ARRAY_2D ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
+	Logger::info("Creating image view with type: " + std::to_string(static_cast<int>(view_type)));
+	create_image_view(format, aspect, LAYERS, mip_levels, view_type);
 	
-    //Deallocate stage device memory
-    for(int i{}; i < stages.size(); ++i)
+	   //Deallocate stage device memory
+	   Logger::info("Cleaning up " + std::to_string(stages.size()) + " staging images");
+	   for(int i{}; i < stages.size(); ++i)
 	{
-        device->get().destroyImage(stages[i].first);
-        device->get().freeMemory(stages[i].second);
-    }
+	       device->get().destroyImage(stages[i].first);
+	       device->get().freeMemory(stages[i].second);
+	   }
 
 	descriptor_information = {sampler.get(), *image_view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	Logger::info("Vulkan image creation completed successfully");
 }
 
 Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sampler,
@@ -162,22 +193,47 @@ Oreginum::Vulkan::Image::Image(std::shared_ptr<Device> device, const Sampler& sa
 	vk::ImageAspectFlags aspect, vk::SampleCountFlagBits samples)
 	: device(device), resolution(resolution), aspect(aspect)
 {
+	Logger::info("Creating render target image: " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y) +
+		", format " + std::to_string(static_cast<int>(format)) +
+		", usage " + std::to_string(static_cast<uint32_t>(usage)) +
+		", samples " + std::to_string(static_cast<int>(samples)));
+
 	image = create_image(*device, resolution, 1, usage, format, aspect,
 		1, vk::ImageTiling::eOptimal, false, false, samples);
 	image_memory = create_and_bind_image_memory(*device, image);
 	create_image_view(format, aspect);
 
 	descriptor_information = {sampler.get(), *image_view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	Logger::info("Render target image creation completed");
 }
 
 Oreginum::Vulkan::Image::~Image()
 {
-	if(image_view.use_count() != 1 || !device) return;
-	if(*image_view) device->get().destroyImageView(*image_view);
-	if(image_memory) device->get().freeMemory(image_memory);
+	if(image_view.use_count() != 1 || !device) {
+		Logger::info("Image destructor: shared image view or invalid device, skipping cleanup");
+		return;
+	}
+	
+	Logger::info("Destroying Vulkan image and associated resources");
+	
+	if(*image_view) {
+		Logger::info("Destroying image view");
+		device->get().destroyImageView(*image_view);
+	}
+	if(image_memory) {
+		Logger::info("Freeing image memory");
+		device->get().freeMemory(image_memory);
+	}
 
 	//If it is a swapchain image, it is automatically destroyed with the swapchain
-	if(image && !swapchain) device->get().destroyImage(image);
+	if(image && !swapchain) {
+		Logger::info("Destroying image handle");
+		device->get().destroyImage(image);
+	} else if(swapchain) {
+		Logger::info("Swapchain image - destruction handled by swapchain");
+	}
+	
+	Logger::info("Image cleanup completed");
 }
 
 void Oreginum::Vulkan::Image::swap(Image *other)
@@ -215,6 +271,11 @@ vk::Image Oreginum::Vulkan::Image::create_image(const Device& device, const glm:
 	vk::ImageAspectFlags aspect, uint32_t layers, vk::ImageTiling tiling,
 	bool array_2d, bool cubemap, vk::SampleCountFlagBits samples)
 {
+	Logger::info("Creating image: " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y) +
+		", mips " + std::to_string(mip_levels) + ", layers " + std::to_string(layers) +
+		", tiling " + (tiling == vk::ImageTiling::eOptimal ? "optimal" : "linear") +
+		", samples " + std::to_string(static_cast<int>(samples)));
+
 	vk::Image image;
 	vk::ImageCreateInfo image_information{cubemap ? vk::ImageCreateFlagBits::eCubeCompatible :
 		array_2d ? vk::ImageCreateFlagBits::e2DArrayCompatibleKHR : vk::ImageCreateFlags{},
@@ -222,22 +283,44 @@ vk::Image Oreginum::Vulkan::Image::create_image(const Device& device, const glm:
 		mip_levels, layers, samples, tiling, usage, vk::SharingMode::eExclusive,
 		0, nullptr, vk::ImageLayout::ePreinitialized};
 
-	if(device.get().createImage(&image_information, nullptr, &image) != vk::Result::eSuccess)
+	vk::Result result = device.get().createImage(&image_information, nullptr, &image);
+	if(result != vk::Result::eSuccess) {
+		Logger::excep("Failed to create Vulkan image: VkResult " + std::to_string(static_cast<int>(result)));
 		Core::error("Could not create a Vulkan image.");
+	}
+	Logger::info("Image created successfully");
 	return image;
 }
 
 vk::DeviceMemory Oreginum::Vulkan::Image::create_and_bind_image_memory(const Device& device,
 	const vk::Image& image, vk::MemoryPropertyFlags flags)
 {
+	Logger::info("Allocating and binding image memory with flags " + std::to_string(static_cast<uint32_t>(flags)));
+
 	vk::DeviceMemory image_memory;
 	vk::MemoryRequirements memory_requirements(device.get().getImageMemoryRequirements(image));
-	vk::MemoryAllocateInfo memory_information{memory_requirements.size,
-		Buffer::find_memory(device, memory_requirements.memoryTypeBits, flags)};
-	if(device.get().allocateMemory(&memory_information,
-		nullptr, &image_memory) != vk::Result::eSuccess)
+	
+	Logger::info("Image memory requirements: size " + std::to_string(memory_requirements.size) +
+		" bytes, alignment " + std::to_string(memory_requirements.alignment) +
+		", type bits " + std::to_string(memory_requirements.memoryTypeBits));
+
+	uint32_t memory_type_index = Buffer::find_memory(device, memory_requirements.memoryTypeBits, flags);
+	vk::MemoryAllocateInfo memory_information{memory_requirements.size, memory_type_index};
+	
+	vk::Result result = device.get().allocateMemory(&memory_information, nullptr, &image_memory);
+	if(result != vk::Result::eSuccess) {
+		Logger::excep("Failed to allocate image memory: VkResult " + std::to_string(static_cast<int>(result)));
 		Oreginum::Core::error("Could not allocate memory for a Vulkan image.");
-	device.get().bindImageMemory(image, image_memory, 0);
+	}
+	
+	Logger::info("Image memory allocated: " + std::to_string(memory_requirements.size) +
+		" bytes, memory type " + std::to_string(memory_type_index));
+
+	result = device.get().bindImageMemory(image, image_memory, 0);
+	if(result != vk::Result::eSuccess) {
+		Logger::excep("Failed to bind image memory: VkResult " + std::to_string(static_cast<int>(result)));
+	}
+	Logger::info("Image memory bound successfully");
 	return image_memory;
 }
 
@@ -258,8 +341,18 @@ void Oreginum::Vulkan::Image::copy_image(const Command_Buffer& temporary_command
 void Oreginum::Vulkan::Image::create_image_view(vk::Format format, vk::ImageAspectFlags aspect,
 	uint32_t layers, uint32_t levels, vk::ImageViewType view_type)
 {
+	Logger::info("Creating image view: format " + std::to_string(static_cast<int>(format)) +
+		", aspect " + std::to_string(static_cast<uint32_t>(aspect)) +
+		", layers " + std::to_string(layers) + ", levels " + std::to_string(levels) +
+		", type " + std::to_string(static_cast<int>(view_type)));
+
 	vk::ImageViewCreateInfo image_view_information
 	{{}, image, view_type, format, {}, {aspect, 0, levels, 0, layers}};
-	if(device->get().createImageView(&image_view_information, nullptr, image_view.get()) !=
-		vk::Result::eSuccess) Oreginum::Core::error("Could not create a Vulkan image view.");
+	
+	vk::Result result = device->get().createImageView(&image_view_information, nullptr, image_view.get());
+	if(result != vk::Result::eSuccess) {
+		Logger::excep("Failed to create image view: VkResult " + std::to_string(static_cast<int>(result)));
+		Oreginum::Core::error("Could not create a Vulkan image view.");
+	}
+	Logger::info("Image view created successfully");
 }

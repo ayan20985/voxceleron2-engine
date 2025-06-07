@@ -1,5 +1,6 @@
 #include <mutex>
 #include "Core.hpp"
+#include "Logger.hpp"
 #include "Window.hpp"
 #include "Renderable.hpp"
 #include "Main Renderer.hpp"
@@ -30,13 +31,25 @@ void Oreginum::Renderer_Core::submit_command_buffers(
 	const std::vector<vk::PipelineStageFlags>& wait_stages,
 	const std::vector<vk::Semaphore>& signal_semaphores)
 {
+	Logger::info("Submitting " + std::to_string(command_buffers.size()) + " command buffers, " +
+		std::to_string(wait_semaphores.size()) + " wait semaphores, " +
+		std::to_string(signal_semaphores.size()) + " signal semaphores");
+		
 	vk::SubmitInfo submit_information{static_cast<uint32_t>(wait_semaphores.size()),
 		wait_semaphores.data(), wait_stages.data(), static_cast<uint32_t>(
 			command_buffers.size()), command_buffers.data(),
 		static_cast<uint32_t>(signal_semaphores.size()), signal_semaphores.data()};
-	if(Oreginum::Renderer_Core::get_device()->get_graphics_queue().submit(
-        submit_information, nullptr) != vk::Result::eSuccess)
+		
+	vk::Result result = Oreginum::Renderer_Core::get_device()->get_graphics_queue().submit(
+        submit_information, nullptr);
+        
+	if(result != vk::Result::eSuccess) {
+		Logger::excep("Failed to submit command buffers, VkResult: " +
+			std::to_string(static_cast<int>(result)));
 		Oreginum::Core::error("Could not submit buffer renderer Vulkan command buffer.");
+	}
+	
+	Logger::info("Command buffers submitted successfully to graphics queue");
 }
 
 Oreginum::Vulkan::Pipeline Oreginum::Renderer_Core::create_pipeline(
@@ -45,8 +58,15 @@ Oreginum::Vulkan::Pipeline Oreginum::Renderer_Core::create_pipeline(
 	const std::vector<vk::DescriptorSetLayout>& descriptor_layouts,
 	const Vulkan::Pipeline& base)
 {
+	Logger::info("Creating pipeline - vertex: \"" + vertex + "\", fragment: \"" + fragment +
+		"\", resolution: " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y) +
+		", render pass: " + std::to_string(render_pass_number) +
+		", descriptor layouts: " + std::to_string(descriptor_layouts.size()));
+		
 	Vulkan::Shader shader{device, {{vertex, vk::ShaderStageFlagBits::eVertex},
 		{fragment, vk::ShaderStageFlagBits::eFragment}}};
+		
+	Logger::info("Pipeline created successfully for shaders " + vertex + "/" + fragment);
 	return {device, resolution, render_pass, shader,
 		descriptor_layouts, render_pass_number, base};
 }
@@ -61,15 +81,30 @@ uint32_t Oreginum::Renderer_Core::get_padded_uniform_size(uint32_t uniform_size)
 
 void Oreginum::Renderer_Core::initialize()
 {
-	if(instance.get()) return;
+	if(instance.get()) {
+		Logger::info("Renderer Core already initialized, skipping");
+		return;
+	}
+
+	Logger::info("=== Starting Renderer Core Initialization ===");
+	auto start_time = std::chrono::high_resolution_clock::now();
 
 	//Initialization
+	Logger::info("Creating Vulkan instance with debug: " + std::string(Core::get_debug() ? "enabled" : "disabled"));
 	instance = std::make_shared<Vulkan::Instance>(Core::get_debug());
+	
+	Logger::info("Creating Vulkan surface");
 	surface = std::make_shared<Vulkan::Surface>(instance);
+	
+	Logger::info("Creating Vulkan device");
 	device = std::make_shared<Vulkan::Device>(*instance, *surface);
+	
+	Logger::info("Creating temporary command pool and buffer");
 	temporary_command_pool = {device, device->get_graphics_queue_family_index(),
 		vk::CommandPoolCreateFlagBits::eResetCommandBuffer};
 	temporary_command_buffer = {device, temporary_command_pool};
+	
+	Logger::info("Creating main command pool");
 	command_pool = {device, device->get_graphics_queue_family_index()};
 
 	//Calculate uniform buffer padding
@@ -77,8 +112,13 @@ void Oreginum::Renderer_Core::initialize()
 		 get_properties().limits.minUniformBufferOffsetAlignment);
 	uniform_size = static_cast<uint32_t>(sizeof(Renderable::Uniforms));
 	padded_uniform_size = get_padded_uniform_size(uniform_size);
+	
+	Logger::info("Uniform buffer configuration - base size: " + std::to_string(uniform_size) +
+		" bytes, padded size: " + std::to_string(padded_uniform_size) +
+		" bytes, alignment: " + std::to_string(minimum_offset));
 
 	//Static descriptors
+	Logger::info("Creating static descriptor pool with UBO dynamic (1), UBO (7), combined image sampler (17)");
 	static_descriptor_pool = {device, {{vk::DescriptorType::eUniformBufferDynamic, 1},
 		{vk::DescriptorType::eUniformBuffer, 7}, {vk::DescriptorType::eCombinedImageSampler, 17}}};
 	uniform_descriptor_set = {device, static_descriptor_pool,
@@ -86,11 +126,17 @@ void Oreginum::Renderer_Core::initialize()
 	texture_descriptor_set = {device, static_descriptor_pool,
 		{{vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}}};
 
+	Logger::info("Creating initial uniform buffer and descriptors");
 	create_uniform_buffer();
 	create_descriptors();
 
 	//Call renderers to initialize
+	Logger::info("Initializing Main Renderer");
 	Main_Renderer::initialize();
+	
+	auto end_time = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+	Logger::info("=== Renderer Core Initialization Complete (" + std::to_string(duration.count()) + "ms) ===");
 }
 
 uint32_t Oreginum::Renderer_Core::add(Renderer_Type renderer_type, Renderable *renderable)
@@ -133,14 +179,24 @@ void Oreginum::Renderer_Core::create_descriptors()
 
 void Oreginum::Renderer_Core::record()
 {
+	Logger::info("=== Recording Command Buffers ===");
+	auto start_time = std::chrono::high_resolution_clock::now();
+	
+	Logger::info("Waiting for device idle before recording");
 	device->get().waitIdle();
 
 	rerecord = false;
+	Logger::info("Creating uniform buffers and descriptors for recording");
 	create_uniform_buffer();
 	create_descriptors();
 
 	//Call renderers to record command buffers
+	Logger::info("Calling Main Renderer to record command buffers");
 	Main_Renderer::record();
+	
+	auto end_time = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+	Logger::info("=== Command Buffer Recording Complete (" + std::to_string(duration.count()) + "ms) ===");
 }
 
 void Oreginum::Renderer_Core::update()
