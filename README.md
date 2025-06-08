@@ -57,45 +57,6 @@ Run the generated executable from Visual Studio or directly from the build direc
 - **Shift**: Run faster
 - **L**: Unlock Mouse
 
-## Logging System
-The engine includes a configurable logging system with different verbosity levels to help with debugging and development:
-
-### Verbosity Levels
-- **MINIMAL**: Only critical information, warnings, and errors (default for release builds)
-- **NORMAL**: Standard operational logs plus all warnings and errors
-- **VERBOSE**: Detailed debugging information including resource creation/destruction
-
-### Configuring Logging
-You can set the logging verbosity level in code when initializing the engine:
-
-```cpp
-// Initialize with minimal logging (for release builds)
-Oreginum::Core::initialize("Voxceleron2", {1280, 720}, false, true, false, 
-                          Oreginum::Logger::Verbosity::MINIMAL);
-
-// For debugging with more information
-Oreginum::Core::initialize("Voxceleron2", {1280, 720}, false, true, false, 
-                          Oreginum::Logger::Verbosity::NORMAL);
-
-// For detailed debugging of specific issues
-Oreginum::Core::initialize("Voxceleron2", {1280, 720}, false, true, false, 
-                          Oreginum::Logger::Verbosity::VERBOSE);
-```
-
-You can also change the verbosity level at runtime:
-```cpp
-// Increase verbosity when entering a specific code section
-Oreginum::Core::set_log_verbosity(Oreginum::Logger::Verbosity::VERBOSE);
-
-// Revert to minimal logging afterward
-Oreginum::Core::set_log_verbosity(Oreginum::Logger::Verbosity::MINIMAL);
-```
-
-### Recommendations
-- Use **MINIMAL** for normal gameplay and release builds
-- Use **NORMAL** during general development
-- Use **VERBOSE** only when debugging specific issues or component initialization
-
 ## Troubleshooting
 If you encounter build errors:
 

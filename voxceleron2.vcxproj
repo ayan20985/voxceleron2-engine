@@ -195,7 +195,6 @@
     <ClCompile Include="src\Oreginum\Camera.cpp" />
     <ClCompile Include="src\Oreginum\Core.cpp" />
     <ClCompile Include="src\Oreginum\Keyboard.cpp" />
-    <ClCompile Include="src\Oreginum\Logger.cpp" />
     <ClCompile Include="src\Oreginum\Main Renderer.cpp" />
     <ClCompile Include="src\Oreginum\Mouse.cpp" />
     <ClCompile Include="src\Oreginum\Renderable.cpp" />
@@ -233,7 +232,6 @@
     <ClInclude Include="src\Oreginum\Camera.hpp" />
     <ClInclude Include="src\Oreginum\Core.hpp" />
     <ClInclude Include="src\Oreginum\Keyboard.hpp" />
-    <ClInclude Include="src\Oreginum\Logger.hpp" />
     <ClInclude Include="src\Oreginum\Main Renderer.hpp" />
     <ClInclude Include="src\Oreginum\Mouse.hpp" />
     <ClInclude Include="src\Oreginum\Renderable.hpp" />

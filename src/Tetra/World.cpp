@@ -1,15 +1,10 @@
 #include "FastNoiseSIMD/FastNoiseSIMD.h"
 #include "World.hpp"
-#include "../Oreginum/Logger.hpp"
 
 Tetra::World::World(glm::u8vec3 size) : SIZE(size), SIZE_CUBED(size.x*size.y*size.z),
 	translation(-glm::fvec3{size.x/2.f, size.y-1 ? size.y-1 : .5f, size.z/2.f}*
 		static_cast<float>(CHUNK_SIZE))
 {
-	Oreginum::Logger::info("Initializing world with size: " + std::to_string(size.x) + "x" +
-		std::to_string(size.y) + "x" + std::to_string(size.z) + " chunks");
-	Oreginum::Logger::info("Total chunks to allocate: " + std::to_string(SIZE_CUBED));
-	
 	//Allocate chunks
 	chunks = new Chunk *[SIZE_CUBED];
 	for(uint8_t z{}; z < size.z; ++z)
@@ -18,12 +13,8 @@ Tetra::World::World(glm::u8vec3 size) : SIZE(size), SIZE_CUBED(size.x*size.y*siz
 				chunks[get_chunk_index({x, y, z})] = new Chunk{glm::fvec3{x, y, z}*
 				static_cast<float>(CHUNK_SIZE), translation, {x, y, z}};
 
-	Oreginum::Logger::info("Chunk allocation complete, beginning world population...");
-	
 	//Initial world creation
 	while(!populated) update();
-	
-	Oreginum::Logger::info("World initialization complete");
 }
 
 Tetra::World::~World()
@@ -36,9 +27,6 @@ Tetra::World::~World()
 
 void Tetra::World::move(uint8_t axis, bool sign)
 {
-	Oreginum::Logger::info("Moving world on axis " + std::to_string(axis) +
-		" in direction " + (sign ? "positive" : "negative"));
-	
 	offset[axis] += sign ? CHUNK_SIZE : -CHUNK_SIZE;
 	std::vector<Chunk *> new_deletion_queue;
 

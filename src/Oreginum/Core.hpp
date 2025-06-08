@@ -1,15 +1,13 @@
 #pragma once
 #include <string>
 #include <GLM/glm.hpp>
-#include "Logger.hpp"
 
 namespace Oreginum
 {
 	namespace Core
 	{
 		void initialize(const std::string& title, const glm::ivec2& resolution,
-			bool vsync = true, bool terminal = false, bool debug = false, 
-			Logger::Verbosity log_verbosity = Logger::Verbosity::NORMAL);
+			bool vsync = true, bool terminal = false, bool debug = false);
 		void destroy();
 
 		void error(const std::string& error);
@@ -20,7 +18,5 @@ namespace Oreginum
 		float get_time();
 		float get_delta();
 		bool get_debug();
-		void set_log_verbosity(Logger::Verbosity level);
-		Logger::Verbosity get_log_verbosity();
 	}
 }

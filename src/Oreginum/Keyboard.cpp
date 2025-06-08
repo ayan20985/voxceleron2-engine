@@ -1,6 +1,5 @@
 #include "Window.hpp"
 #include "Keyboard.hpp"
-#include "Logger.hpp"
 
 namespace
 {
@@ -17,15 +16,6 @@ void Oreginum::Keyboard::update()
 void Oreginum::Keyboard::set_pressed(Key key, bool pressed)
 {
 	::pressed[key] = pressed;
-
-	// Log important key presses (ESC, Enter, etc.) but not every character to avoid spam
-	if(pressed && (key == Key::ESC || key == Key::ENTER || key == Key::SPACEBAR || key == Key::TAB))
-	{
-		std::string key_name = (key == Key::ESC) ? "ESC" :
-							   (key == Key::ENTER) ? "ENTER" :
-							   (key == Key::SPACEBAR) ? "SPACEBAR" : "TAB";
-		Logger::info("Key pressed: " + key_name);
-	}
 
 	char character{to_character(key)};
 	if(character) buffer += character;

@@ -3,7 +3,6 @@
 #include <GLM/gtc/matrix_transform.hpp>
 #include "Renderer Core.hpp"
 #include "Core.hpp"
-#include "Logger.hpp"
 #include "Renderable.hpp"
 #include "Window.hpp"
 #include "Camera.hpp"
@@ -285,32 +284,21 @@ namespace
 
 void Oreginum::Main_Renderer::initialize()
 {
-	Logger::info("=== Initializing Main Renderer ===");
-	auto start_time = std::chrono::high_resolution_clock::now();
-	
-	auto window_res = Window::get_resolution();
-	bloom_resolution = glm::fvec2(window_res)/static_cast<float>(BLOOM_DERESOLUTION);
-	Logger::info("Bloom resolution calculated: " + std::to_string(bloom_resolution.x) + "x" +
-		std::to_string(bloom_resolution.y) + " (1/" + std::to_string(BLOOM_DERESOLUTION) + " of " +
-		std::to_string(window_res.x) + "x" + std::to_string(window_res.y) + ")");
+	bloom_resolution = glm::fvec2(Window::get_resolution())/static_cast<float>(BLOOM_DERESOLUTION);
 
-	Logger::info("Creating swapchain");
 	swapchain = {*Renderer_Core::get_instance(), Renderer_Core::get_surface(),
 		Renderer_Core::get_device(), Renderer_Core::get_temporary_command_buffer()};
 
-	Logger::info("Creating synchronization semaphores");
 	image_available = {Renderer_Core::get_device()};
 	render_finished = {Renderer_Core::get_device()};
 
 	//Samplers
-	Logger::info("Creating samplers for texture filtering");
 	sampler = {Renderer_Core::get_device(), 0, false, vk::SamplerAddressMode::eClampToEdge};
 	ssao_noise_sampler = {Renderer_Core::get_device()};
 	shadow_depth_sampler = {Renderer_Core::get_device(), 0, false,
 		vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear, vk::Filter::eLinear};
 
 	//Initialize descriptor sets
-	Logger::info("Creating descriptor sets for rendering passes");
 	shadow_depth_descriptor_set = {Renderer_Core::get_device(),
 		Renderer_Core::get_static_descriptor_pool(),
 		{{vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex}}};
@@ -322,10 +310,7 @@ void Oreginum::Main_Renderer::initialize()
 	bloom_blur_descriptor_set = {create_descriptor_set(1, 1)};
 	composition_descriptor_set = {create_descriptor_set(2)};
 
-	Logger::info("Creating render passes and graphics pipelines");
 	create_render_passes_and_pipelines();
-	
-	Logger::info("Creating images and framebuffers");
 	create_images_and_framebuffers();
 
 	//Shadow matrix buffer
@@ -384,10 +369,6 @@ void Oreginum::Main_Renderer::initialize()
 	create_and_write_buffer(&bloom_blur_buffer, &bloom_blur_mode, sizeof(uint32_t));
 
 	write_descriptor_sets();
-	
-	auto end_time = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-	Logger::info("=== Main Renderer initialization completed in " + std::to_string(duration.count()) + "ms ===");
 }
 
 void Oreginum::Main_Renderer::write_descriptor_sets()
@@ -537,20 +518,13 @@ void Oreginum::Main_Renderer::create_images_and_framebuffers()
 
 void Oreginum::Main_Renderer::update_uniforms()
 {
-	Logger::info("Updating Main Renderer uniform buffers");
-	
 	//SSAO
-	Logger::info("Updating SSAO uniforms with " + std::to_string(SSAO_KERNEL_SIZE) + " kernel samples");
 	SSAO_Uniforms ssao_uniforms
 	{{}, Oreginum::Camera::get_projection()};
 	for(uint8_t i{}; i < SSAO_KERNEL_SIZE; ++i) ssao_uniforms.kernel[i] = ssao_kernel[i];
 	write_buffer(&ssao_uniforms_buffer, &ssao_uniforms, sizeof(SSAO_Uniforms));
-	Logger::info("SSAO uniforms buffer updated (" + std::to_string(sizeof(SSAO_Uniforms)) + " bytes)");
 
 	//Lighting
-	auto camera_pos = Oreginum::Camera::get_position();
-	Logger::info("Updating lighting uniforms for camera at (" +
-		std::to_string(camera_pos.x) + ", " + std::to_string(camera_pos.y) + ", " + std::to_string(camera_pos.z) + ")");
 	Lighting_Uniforms lighting_uniforms
 	{
 		glm::fvec4{Oreginum::Camera::get_position(), 0.f},
@@ -559,22 +533,14 @@ void Oreginum::Main_Renderer::update_uniforms()
 		shadow_matrix
 	};
 	write_buffer(&lighting_uniforms_buffer, &lighting_uniforms, sizeof(Lighting_Uniforms));
-	Logger::info("Lighting uniforms buffer updated (" + std::to_string(sizeof(Lighting_Uniforms)) + " bytes)");
 }
 
 void Oreginum::Main_Renderer::record()
 {
-	Logger::info("Recording Main Renderer command buffers");
-	auto start_time = std::chrono::high_resolution_clock::now();
-	
 	command_buffers.clear();
-	auto swapchain_images_count = swapchain.get_images().size();
-	Logger::info("Recording commands for " + std::to_string(swapchain_images_count) + " swapchain images");
-	
-	for(uint8_t i{}; i < swapchain_images_count; ++i)
+	for(uint8_t i{}; i < swapchain.get_images().size(); ++i)
 	{
 		//Start
-		Logger::info("Recording command buffer " + std::to_string(i + 1) + "/" + std::to_string(swapchain_images_count));
 		command_buffers.push_back({Renderer_Core::get_device(),
 			Renderer_Core::get_command_pool()});
 		command_buffers.back().begin();
@@ -582,43 +548,26 @@ void Oreginum::Main_Renderer::record()
 		//Normal render
 		if(!Oreginum::Window::is_resizing())
 		{
-			Logger::info("Recording full deferred rendering pipeline for frame " + std::to_string(i));
-			
 			//Render passes
-			Logger::info("Recording G-Buffer pass (geometry render with 4 color attachments)");
-			geometry_render(i, true, 4, g_buffer_render_pass, g_buffer_framebuffers, g_buffer_pipeline,
+			geometry_render(i, true, 4, g_buffer_render_pass, g_buffer_framebuffers, g_buffer_pipeline, 
 				false, {Oreginum::Renderer_Core::get_uniform_descriptor_set().get()}, true);
-				
-			Logger::info("Recording shadow depth pass");
 			geometry_render(i, true, 0, shadow_depth_render_pass, shadow_depth_framebuffers,
-				shadow_depth_pipeline, false,
+				shadow_depth_pipeline, false, 
 				{Oreginum::Renderer_Core::get_uniform_descriptor_set().get(),
 				shadow_depth_descriptor_set.get()});
-				
-			Logger::info("Recording translucent geometry pass");
 			geometry_render(i, false, 2, translucent_render_pass, translucent_framebuffers,
 				translucent_pipeline, true, {Oreginum::Renderer_Core::get_uniform_descriptor_set().get()});
 		
-			Logger::info("Recording SSAO pass (screen-space ambient occlusion)");
 			deferred_render(i, 1, ssao_render_pass, ssao_framebuffers,
 				ssao_pipeline, ssao_descriptor_set.get());
-				
-			Logger::info("Recording SSAO blur pass");
 			deferred_render(i, 1, ssao_blur_render_pass, ssao_blur_framebuffers,
 				ssao_blur_pipeline, ssao_blur_descriptor_set.get());
-				
-			Logger::info("Recording lighting pass (deferred shading)");
 			deferred_render(i, 2, lighting_render_pass, lighting_framebuffers,
 				lighting_pipeline, lighting_descriptor_set.get());
 
-			Logger::info("Recording bloom blur passes (" + std::to_string(BLOOM_ITERATIONS) + " iterations)");
 			uint8_t mode{};
 			for(uint8_t j{}; j < BLOOM_ITERATIONS*2+1; ++j)
 			{
-				std::string mode_name = (mode == 0) ? "initial" : (mode == 1) ? "horizontal" : "vertical";
-				Logger::info("Recording bloom blur pass " + std::to_string(j + 1) + "/" +
-					std::to_string(BLOOM_ITERATIONS*2+1) + " (" + mode_name + ")");
-					
 				deferred_render(i, 1, bloom_blur_render_pass, mode == 0 || mode == 2 ?
 					bloom_blur_framebuffers : bloom_blur_horizontal_framebuffers, bloom_blur_pipeline,
 					mode == 0 ? bloom_blur_initial_descriptor_set.get() :
@@ -636,7 +585,6 @@ void Oreginum::Main_Renderer::record()
 					nullptr, nullptr);
 			}
 
-			Logger::info("Recording composition pass (final image composition)");
 			deferred_render(i, 1, composition_render_pass, composition_framebuffers,
 				composition_pipeline, composition_descriptor_set.get());
 		}
@@ -644,7 +592,6 @@ void Oreginum::Main_Renderer::record()
 		//Moving or resizing render
 		else
 		{
-			Logger::info("Recording resize/move clear pass for frame " + std::to_string(i));
 			swapchain.get_images()[i].transition(command_buffers.back(), vk::ImageLayout::ePresentSrcKHR,
 				vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eMemoryRead,
 				vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTransfer,
@@ -662,48 +609,24 @@ void Oreginum::Main_Renderer::record()
 
 		command_buffers.back().end();
 	}
-	
-	auto end_time = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-	Logger::info("Command buffer recording completed in " + std::to_string(duration.count()) + "μs");
 }
 
 void Oreginum::Main_Renderer::reinitialize_swapchain()
-{
-	Logger::info("Reinitializing Main Renderer swapchain");
-	auto start_time = std::chrono::high_resolution_clock::now();
-	
-	swapchain.reinitialize(Renderer_Core::get_device(), Renderer_Core::get_temporary_command_buffer());
-	
-	auto end_time = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-	Logger::info("Swapchain reinitialized in " + std::to_string(duration.count()) + "ms");
-}
+{ swapchain.reinitialize(Renderer_Core::get_device(), Renderer_Core::get_temporary_command_buffer()); }
 
 void Oreginum::Main_Renderer::render()
 {
-	auto start_time = std::chrono::high_resolution_clock::now();
-	
 	//Get swapchain image
 	uint32_t image_index;
 	vk::Result result{Renderer_Core::get_device()->get().acquireNextImageKHR(swapchain.get(),
 		std::numeric_limits<uint64_t>::max(), image_available.get(), nullptr, &image_index)};
 	if(result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
-	{
-		Logger::excep("Failed to acquire Vulkan swapchain image: " +
-			std::string(result == vk::Result::eSuboptimalKHR ? "suboptimal" : "out of date"));
 		Core::error("Could not aquire a Vulkan swapchain image.");
-	}
-	Logger::info("Acquired swapchain image " + std::to_string(image_index) + " for rendering");
 
 	//Submit render commands
-	auto submit_start = std::chrono::high_resolution_clock::now();
 	Renderer_Core::submit_command_buffers({command_buffers[image_index].get()},
 		{image_available.get()}, {vk::PipelineStageFlagBits::eColorAttachmentOutput},
 		{render_finished.get()});
-	auto submit_end = std::chrono::high_resolution_clock::now();
-	auto submit_duration = std::chrono::duration_cast<std::chrono::microseconds>(submit_end - submit_start);
-	Logger::info("Command buffer submitted to GPU in " + std::to_string(submit_duration.count()) + "μs");
 
 	//Present swapchain image
 	std::array<vk::Semaphore, 1> present_wait_semaphores{render_finished.get()};
@@ -712,18 +635,7 @@ void Oreginum::Main_Renderer::render()
 		present_wait_semaphores.data(), static_cast<uint32_t>(swapchains.size()), swapchains.data(),
 		&image_index};
 
-	auto present_start = std::chrono::high_resolution_clock::now();
 	result = Renderer_Core::get_device()->get_present_queue().presentKHR(present_information);
 	if(result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
-	{
-		Logger::excep("Failed to present to Vulkan queue: " +
-			std::string(result == vk::Result::eSuboptimalKHR ? "suboptimal" : "out of date"));
 		Core::error("Could not submit Vulkan presentation queue.");
-	}
-	
-	auto end_time = std::chrono::high_resolution_clock::now();
-	auto present_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - present_start);
-	auto total_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-	Logger::info("Frame presented in " + std::to_string(present_duration.count()) + "μs " +
-		"(total render time: " + std::to_string(total_duration.count()) + "μs)");
 }

@@ -2,7 +2,6 @@
 #include "Window.hpp"
 #include "Mouse.hpp"
 #include "Keyboard.hpp"
-#include "Logger.hpp"
 
 namespace
 {
@@ -32,18 +31,9 @@ namespace
 				GET_WHEEL_DELTA_WPARAM(message_information)/WHEEL_DELTA); break;
 
 		//Window
-		case WM_SETFOCUS:
-			focused = true;
-			Oreginum::Logger::info("Window gained focus");
-			break;
-		case WM_KILLFOCUS:
-			focused = false;
-			Oreginum::Logger::info("Window lost focus");
-			break;
-		case WM_CLOSE:
-			closed = true;
-			Oreginum::Logger::info("Window close requested");
-			break;
+		case WM_SETFOCUS: focused = true; break;
+		case WM_KILLFOCUS: focused = false; break;
+		case WM_CLOSE: closed = true; break;
 		default: return DefWindowProc(window, message,
 			message_information, message_informaton_long);
 		}
@@ -53,14 +43,11 @@ namespace
 
 void Oreginum::Window::initialize(const std::string& title, const glm::ivec2& resolution, bool debug)
 {
-	Logger::info("Initializing window: " + title + " (" + std::to_string(resolution.x) + "x" + std::to_string(resolution.y) + ")");
-	
 	::title = title;
 	instance = GetModuleHandle(NULL);
 
 	if(debug)
 	{
-		Logger::info("Debug mode enabled - creating console window");
 		//Create console
 		AllocConsole();
 		AttachConsole(GetCurrentProcessId());
@@ -85,27 +72,15 @@ void Oreginum::Window::initialize(const std::string& title, const glm::ivec2& re
 
 	old_resolution = ::resolution = resolution;
 	position = Core::get_screen_resolution()/2-resolution/2;
-	Logger::info("Creating window at position (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ")");
-	
 	window = CreateWindow(title.c_str(), title.c_str(), WS_POPUP | WS_VISIBLE,
 		position.x, position.y, resolution.x, resolution.y, NULL, NULL, instance, NULL);
-	if(!window)
-	{
-		Logger::excep("Failed to create window: " + title);
-		Core::error("Could not create window.");
-	}
-	else
-	{
-		Logger::info("Window created successfully: " + title);
-	}
+	if(!window) Core::error("Could not create window.");
 }
 
 void Oreginum::Window::destroy()
 {
-	Logger::info("Destroying window: " + title);
 	DestroyWindow(window);
 	//FreeConsole();
-	Logger::info("Window destroyed successfully");
 }
 
 void Oreginum::Window::update()
@@ -118,30 +93,19 @@ void Oreginum::Window::update()
 	static MSG message;
 	while(PeekMessage(&message, NULL, NULL, NULL, PM_REMOVE)) DispatchMessage(&message);
 
-	if(Keyboard::is_held(Key::ESC))
-	{
-		Logger::info("ESC key pressed - closing window");
-		closed = true;
-	}
+	if(Keyboard::is_held(Key::ESC)) closed = true;
 
 	//Move
 	if(Mouse::is_held(Button::LEFT_MOUSE) && Keyboard::is_held(CTRL) && !Mouse::is_locked())
 	{
-		glm::uvec2 old_position = position;
 		position += Mouse::get_delta();
 		MoveWindow(window, position.x, position.y, resolution.x, resolution.y, false);
 		moving = true;
-		
-		if (old_position != position)
-		{
-			Logger::info("Window moved to position (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ")");
-		}
 	}
 			
 	//Resize
 	else if(Mouse::is_held(Button::RIGHT_MOUSE) && Keyboard::is_held(CTRL) && !Mouse::is_locked())
 	{
-		glm::uvec2 old_res = resolution;
 		resolution = {glm::clamp(glm::ivec2{resolution}+Mouse::get_delta(),
 			glm::ivec2{MINIMUM_RESOLUTION}, glm::ivec2{INT32_MAX})};
 		MoveWindow(window, position.x, position.y, resolution.x, resolution.y, false);
@@ -149,17 +113,7 @@ void Oreginum::Window::update()
 		//Set resizing booleans
 		::began_resizing = Mouse::was_pressed(Button::RIGHT_MOUSE);
 		resizing = true;
-		
-		if (old_res != resolution)
-		{
-			Logger::info("Window resized to " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y));
-		}
-	} else if(resizing)
-	{
-		resized = true;
-		resizing = false;
-		Logger::info("Window resize completed: " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y));
-	}
+	} else if(resizing) resized = true, resizing = false;
 }
 
 HINSTANCE Oreginum::Window::get_instance(){ return instance; }
