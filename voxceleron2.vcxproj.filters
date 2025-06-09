@@ -16,6 +16,9 @@
     <Filter Include="Source Files\Tetra">
       <UniqueIdentifier>{8a0e0afd-ea57-4e60-ae3a-a0f0b5fdddc0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Infinitus">
+      <UniqueIdentifier>{9b1f1bfe-fb68-4f71-bf4b-b1g1c6g86eed}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\Oreginum">
       <UniqueIdentifier>{c3ea10ed-05c8-4271-96c0-c2cde6c75b42}</UniqueIdentifier>
     </Filter>
@@ -24,6 +27,9 @@
     </Filter>
     <Filter Include="Header Files\Tetra">
       <UniqueIdentifier>{f9a0d649-d8f3-4a6c-a9cd-4a54323a20a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Infinitus">
+      <UniqueIdentifier>{g0b1e75a-e9g4-4b7d-ba5e-5c65434b31b2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Oreginum">
       <UniqueIdentifier>{5bc9dde1-cfd8-409c-9ff8-73075f7fb8fb}</UniqueIdentifier>
@@ -73,6 +79,19 @@
     </ClCompile>
     <ClCompile Include="src\Tetra\World.cpp">
       <Filter>Source Files\Tetra</Filter>
+    </ClCompile>
+    <!-- Infinitus files -->
+    <ClCompile Include="src\Infinitus\Chunk.cpp">
+      <Filter>Source Files\Infinitus</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Infinitus\Main.cpp">
+      <Filter>Source Files\Infinitus</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Infinitus\Render Group.cpp">
+      <Filter>Source Files\Infinitus</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Infinitus\World.cpp">
+      <Filter>Source Files\Infinitus</Filter>
     </ClCompile>
     <!-- Oreginum files -->
     <ClCompile Include="src\Oreginum\Camera.cpp">
@@ -177,6 +196,18 @@
     </ClInclude>
     <ClInclude Include="src\Tetra\World.hpp">
       <Filter>Header Files\Tetra</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Infinitus\Chunk.hpp">
+      <Filter>Header Files\Infinitus</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Infinitus\Common.hpp">
+      <Filter>Header Files\Infinitus</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Infinitus\Render Group.hpp">
+      <Filter>Header Files\Infinitus</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Infinitus\World.hpp">
+      <Filter>Header Files\Infinitus</Filter>
     </ClInclude>
     <ClInclude Include="src\Oreginum\Camera.hpp">
       <Filter>Header Files\Oreginum</Filter>

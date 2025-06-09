@@ -186,11 +186,36 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <!-- Tetra files -->
-    <ClCompile Include="src\Tetra\Chunk.cpp" />
-    <ClCompile Include="src\Tetra\Main.cpp" />
-    <ClCompile Include="src\Tetra\Render Group.cpp" />
-    <ClCompile Include="src\Tetra\World.cpp" />
+    <!-- Tetra files (excluded) -->
+    <ClCompile Include="src\Tetra\Chunk.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\Tetra\Main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\Tetra\Render Group.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\Tetra\World.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <!-- Infinitus files -->
+    <ClCompile Include="src\Infinitus\Chunk.cpp" />
+    <ClCompile Include="src\Infinitus\Main.cpp" />
+    <ClCompile Include="src\Infinitus\Render Group.cpp" />
+    <ClCompile Include="src\Infinitus\World.cpp" />
     <!-- Oreginum files -->
     <ClCompile Include="src\Oreginum\Camera.cpp" />
     <ClCompile Include="src\Oreginum\Core.cpp" />
@@ -229,6 +254,10 @@
     <ClInclude Include="src\Tetra\Common.hpp" />
     <ClInclude Include="src\Tetra\Render Group.hpp" />
     <ClInclude Include="src\Tetra\World.hpp" />
+    <ClInclude Include="src\Infinitus\Chunk.hpp" />
+    <ClInclude Include="src\Infinitus\Common.hpp" />
+    <ClInclude Include="src\Infinitus\Render Group.hpp" />
+    <ClInclude Include="src\Infinitus\World.hpp" />
     <ClInclude Include="src\Oreginum\Camera.hpp" />
     <ClInclude Include="src\Oreginum\Core.hpp" />
     <ClInclude Include="src\Oreginum\Keyboard.hpp" />

@@ -3,10 +3,10 @@ C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD_internal.cpp;C:\voxce
 C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD_sse2.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\FastNoiseSIMD_sse2.obj
 C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD_sse41.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\FastNoiseSIMD_sse41.obj
 C:\voxceleron2-engine\external\FastNoiseSIMD\FastNoiseSIMD_avx2.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\FastNoiseSIMD_avx2.obj
-C:\voxceleron2-engine\src\Tetra\Chunk.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Chunk.obj
-C:\voxceleron2-engine\src\Tetra\Main.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Main.obj
-C:\voxceleron2-engine\src\Tetra\Render Group.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Render Group.obj
-C:\voxceleron2-engine\src\Tetra\World.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\World.obj
+C:\voxceleron2-engine\src\Infinitus\Chunk.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Chunk.obj
+C:\voxceleron2-engine\src\Infinitus\Main.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Main.obj
+C:\voxceleron2-engine\src\Infinitus\Render Group.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Render Group.obj
+C:\voxceleron2-engine\src\Infinitus\World.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\World.obj
 C:\voxceleron2-engine\src\Oreginum\Camera.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Camera.obj
 C:\voxceleron2-engine\src\Oreginum\Core.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Core.obj
 C:\voxceleron2-engine\src\Oreginum\Keyboard.cpp;C:\voxceleron2-engine\build\intermediates\x64\Release\Keyboard.obj
