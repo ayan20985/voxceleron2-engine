@@ -7,20 +7,21 @@ Tetra::World::World() : current_player_chunk(0, 0, 0), last_player_chunk(0, 0, 0
 	populated(false), meshed(false)
 {
 	// Initialize threading arrays
-	for(uint8_t i = 0; i < THREADS; ++i) {
-		is_thread_busy[i] = false;
-		was_thread_launched[i] = false;
-	}
-
+        for(uint8_t i = 0; i < THREADS; ++i) {
+            is_thread_busy[i] = false;
+            was_thread_launched[i] = false;
+        }
+        
 	// Initial chunk loading around spawn point
 	// Force initial player chunk calculation
 	glm::fvec3 player_pos = Oreginum::Camera::get_position();
 	current_player_chunk = world_pos_to_chunk_pos(player_pos);
 	last_player_chunk = current_player_chunk;
 	
-	// Load initial chunks around player
+	// Load initial chunks around player (horizontal infinite, limited vertical)
+	const int VERTICAL_LOAD_DISTANCE = 2; // Only 5 chunks vertically
 	for(int x = current_player_chunk.x - LOAD_DISTANCE; x <= current_player_chunk.x + LOAD_DISTANCE; ++x) {
-		for(int y = current_player_chunk.y - LOAD_DISTANCE; y <= current_player_chunk.y + LOAD_DISTANCE; ++y) {
+		for(int y = current_player_chunk.y - VERTICAL_LOAD_DISTANCE; y <= current_player_chunk.y + VERTICAL_LOAD_DISTANCE; ++y) {
 			for(int z = current_player_chunk.z - LOAD_DISTANCE; z <= current_player_chunk.z + LOAD_DISTANCE; ++z) {
 				glm::ivec3 chunk_pos(x, y, z);
 				load_chunk(chunk_pos);
@@ -35,7 +36,7 @@ Tetra::World::World() : current_player_chunk(0, 0, 0), last_player_chunk(0, 0, 0
 Tetra::World::~World()
 {
 	// Wait for all threads to finish
-	for(uint8_t i = 0; i < THREADS; ++i) {
+        for(uint8_t i = 0; i < THREADS; ++i) {
 		if(was_thread_launched[i]) threads[i].join();
 	}
 	
@@ -45,7 +46,7 @@ Tetra::World::~World()
 	// Clean up all loaded chunks
 	std::lock_guard<std::mutex> chunks_guard{chunks_mutex};
 	for(auto& pair : loaded_chunks) {
-		delete pair.second;
+            delete pair.second;
 	}
 	loaded_chunks.clear();
 }
@@ -75,13 +76,15 @@ Tetra::Chunk* Tetra::World::get_chunk_at(const glm::ivec3& chunk_pos)
 bool Tetra::World::is_chunk_in_render_distance(const glm::ivec3& chunk_pos, const glm::ivec3& player_chunk)
 {
 	glm::ivec3 diff = abs(chunk_pos - player_chunk);
-	return diff.x <= RENDER_DISTANCE && diff.y <= RENDER_DISTANCE && diff.z <= RENDER_DISTANCE;
+	const int VERTICAL_RENDER_DISTANCE = 2;
+	return diff.x <= RENDER_DISTANCE && diff.y <= VERTICAL_RENDER_DISTANCE && diff.z <= RENDER_DISTANCE;
 }
 
 bool Tetra::World::is_chunk_in_load_distance(const glm::ivec3& chunk_pos, const glm::ivec3& player_chunk)
 {
 	glm::ivec3 diff = abs(chunk_pos - player_chunk);
-	return diff.x <= LOAD_DISTANCE && diff.y <= LOAD_DISTANCE && diff.z <= LOAD_DISTANCE;
+	const int VERTICAL_LOAD_DISTANCE = 2;
+	return diff.x <= LOAD_DISTANCE && diff.y <= VERTICAL_LOAD_DISTANCE && diff.z <= LOAD_DISTANCE;
 }
 
 void Tetra::World::load_chunk(const glm::ivec3& chunk_pos)
@@ -106,8 +109,8 @@ void Tetra::World::unload_chunk(const glm::ivec3& chunk_pos)
 	if(!chunk) return;
 	
 	// Remove render groups immediately
-	chunk->remove_render_groups();
-	
+                chunk->remove_render_groups();
+                
 	// Add to deletion queue
 	{
 		std::lock_guard<std::mutex> deletion_queue_guard{deletion_queue_mutex};
@@ -131,9 +134,10 @@ void Tetra::World::update_chunks_around_player()
 	// Check if player moved to a different chunk
 	if(current_player_chunk != last_player_chunk)
 	{
-		// Determine chunks to load (within LOAD_DISTANCE)
+		// Determine chunks to load (horizontal infinite, limited vertical like Minecraft)
+		const int VERTICAL_LOAD_DISTANCE = 2; // Only 5 chunks vertically (2 above, current, 2 below)
 		for(int x = current_player_chunk.x - LOAD_DISTANCE; x <= current_player_chunk.x + LOAD_DISTANCE; ++x) {
-			for(int y = current_player_chunk.y - LOAD_DISTANCE; y <= current_player_chunk.y + LOAD_DISTANCE; ++y) {
+			for(int y = current_player_chunk.y - VERTICAL_LOAD_DISTANCE; y <= current_player_chunk.y + VERTICAL_LOAD_DISTANCE; ++y) {
 				for(int z = current_player_chunk.z - LOAD_DISTANCE; z <= current_player_chunk.z + LOAD_DISTANCE; ++z) {
 					glm::ivec3 chunk_pos(x, y, z);
 					if(!is_chunk_loaded(chunk_pos)) {
@@ -402,13 +406,12 @@ float *Tetra::World::simplex(const glm::ivec3& offset, const glm::ivec3& size,
 
 void Tetra::World::populate_chunk_pass_1(Tetra::Chunk *chunk)
 {
-	const glm::fvec3 chunk_translation = chunk->get_translation();
-	const glm::ivec3 CHUNK_OFFSET{
-		static_cast<int>(chunk_translation.x),
-		static_cast<int>(chunk_translation.y), 
-		static_cast<int>(chunk_translation.z)
-	};
-	const glm::ivec3 OFFSET_2D{CHUNK_OFFSET.z, CHUNK_OFFSET.x, 0}, SIZE_2D{CHUNK_SIZE, CHUNK_SIZE, 1};
+	// Get chunk position in world coordinates
+	glm::ivec3 chunk_world_pos = world_pos_to_chunk_pos(chunk->get_translation());
+	glm::ivec3 chunk_offset = chunk_world_pos * static_cast<int>(CHUNK_SIZE);
+	
+	const glm::ivec3 CHUNK_OFFSET{chunk_offset.x, chunk_offset.y, chunk_offset.z},
+		OFFSET_2D{CHUNK_OFFSET.z, CHUNK_OFFSET.x, 0}, SIZE_2D{CHUNK_SIZE, CHUNK_SIZE, 1};
 	constexpr uint8_t RISES_BASES_HEIGHT{20}, EARTH_RANGE{50}, MOUNTAINOUSNESS_RANGE{200};
 
 	float *mountainousness_set{simplex(OFFSET_2D, SIZE_2D, .003f, 7, SEED)};
@@ -431,7 +434,7 @@ void Tetra::World::populate_chunk_pass_1(Tetra::Chunk *chunk)
 					mountainousness_set[noise_index_2d]*
 					MOUNTAINOUSNESS_RANGE, 0.f)};
 
-				float VOXEL_Y{chunk_translation.y + y};
+				float VOXEL_Y{static_cast<float>(chunk_offset.y + y)};
 
 				const float EARTH{earth_set[noise_index_2d]*EARTH_RANGE};
 				const float HILLS{hills_set[noise_index_2d]*5*MOUNTAINOUSNESS/30};
@@ -443,7 +446,7 @@ void Tetra::World::populate_chunk_pass_1(Tetra::Chunk *chunk)
 				const float PLATEAU{VOXEL_Y > PLATEAU_HEIGHT ?
 					plateau_fill_set[noise_index_3d]*(VOXEL_Y-PLATEAU_HEIGHT) : 0};
 
-				if(VOXEL_Y < GROUND || PLATEAU > .1)
+				if(VOXEL_Y > GROUND || PLATEAU > .1)
 					chunk->set_voxel_material({x, y, z}, Materials::STONE);
 
 				++noise_index_3d;
@@ -468,40 +471,158 @@ bool Tetra::World::axis_bounds_check(glm::u8vec3 values, glm::u8vec3 minimum, gl
 
 void Tetra::World::inter_chunk_set(Tetra::Chunk *chunk, glm::i16vec3 voxel_index, uint8_t material)
 {
-	// For infinite world, we need to handle inter-chunk voxel setting differently
-	// This is simplified for now - full implementation would require neighboring chunk access
-	if(voxel_index.x >= 0 && voxel_index.x < CHUNK_SIZE &&
-	   voxel_index.y >= 0 && voxel_index.y < CHUNK_SIZE &&
-	   voxel_index.z >= 0 && voxel_index.z < CHUNK_SIZE) {
+	//If outside current chunk
+	if(axis_bounds_check(glm::u8vec3(voxel_index), glm::u8vec3{0}, glm::u8vec3{CHUNK_SIZE-1}))
+	{
+		// Calculate which chunk this voxel belongs to
+		glm::ivec3 current_chunk_pos = world_pos_to_chunk_pos(chunk->get_translation());
+		glm::ivec3 target_chunk_pos = current_chunk_pos;
+		
+		// Adjust chunk position and voxel index based on which boundary was crossed
+		for(uint8_t axis = 0; axis < 3; ++axis)
+		{
+			if(voxel_index[axis] < 0) 
+			{
+				--target_chunk_pos[axis];
+				voxel_index[axis] = static_cast<int16_t>(CHUNK_SIZE) + voxel_index[axis];
+			}
+			else if(voxel_index[axis] >= CHUNK_SIZE) 
+			{
+				++target_chunk_pos[axis];
+				voxel_index[axis] = voxel_index[axis] - static_cast<int16_t>(CHUNK_SIZE);
+			}
+		}
+
+		// Try to find the target chunk
+		Tetra::Chunk* target_chunk = get_chunk_at(target_chunk_pos);
+		if(target_chunk && !target_chunk->is_being_deleted())
+		{
+			target_chunk->set_voxel_material(glm::u8vec3(voxel_index), material);
+		}
+		// If chunk doesn't exist or is being deleted, we just ignore the voxel
+		// This is acceptable for features like trees that span chunk boundaries
+	}
+	//If inside current chunk
+	else 
+	{
 		chunk->set_voxel_material(glm::u8vec3(voxel_index), material);
 	}
 }
 
 void Tetra::World::create_tree(Tetra::Chunk *chunk, glm::i16vec3 base_voxel_index)
 {
-	for(uint8_t tree_y{}; tree_y < TREE_SIZE.y; ++tree_y)
-		for(uint8_t tree_z{}; tree_z < TREE_SIZE.z; ++tree_z)
-			for(uint8_t tree_x{}; tree_x < TREE_SIZE.x; ++tree_x)
-			{
-				uint8_t material{TREE[tree_y][tree_z][tree_x]};
-				if(!material) continue;
+	base_voxel_index -= glm::i16vec3{TREE_SIZE.x/2, 0, TREE_SIZE.z/2};
 
-				glm::i16vec3 voxel_index{base_voxel_index.x+tree_x-TREE_SIZE.x/2,
-					base_voxel_index.y+tree_y, base_voxel_index.z+tree_z-TREE_SIZE.z/2};
+	for(int8_t y{}; y < TREE_SIZE.y; ++y)
+		for(int8_t x{}; x < TREE_SIZE.x; ++x)
+			for(int8_t z{}; z < TREE_SIZE.z; ++z)
+			{
+				glm::i16vec3 voxel_index{base_voxel_index};
+				voxel_index += glm::i16vec3{x, -y, z}; // Flip Y to account for downward-increasing coordinates
+				uint8_t material{TREE[y][z][x]};
+				if(!material) continue;
 				inter_chunk_set(chunk, voxel_index, material);
 			}
 }
 
 void Tetra::World::populate_chunk_pass_2(Tetra::Chunk *chunk)
 {
-	// Simplified implementation for infinite world
-	// Trees and other features would be placed here
-	// For now, we'll skip complex inter-chunk features
+	const glm::ivec3 chunk_world_pos = chunk->get_translation();
+	const glm::ivec3 CHUNK_OFFSET{chunk_world_pos.x, chunk_world_pos.y, chunk_world_pos.z};
+	const glm::ivec3 OFFSET_2D{CHUNK_OFFSET.z, CHUNK_OFFSET.x, 0};
+	const glm::ivec3 SIZE_2D{CHUNK_SIZE, CHUNK_SIZE, 1};
+
+	float *tree_area_set{simplex(OFFSET_2D, SIZE_2D, .003f, 5, SEED+6)};
+
+	uint32_t noise_index_2d{};
+	
+	// Process each column (x,z) in this chunk
+	for(uint8_t voxel_z{}; voxel_z < CHUNK_SIZE; ++voxel_z)
+	{
+		for(uint8_t voxel_x{}; voxel_x < CHUNK_SIZE; ++voxel_x)
+		{
+			// Find the surface level for this column by scanning from top to bottom  
+			// Since Y increases downward, Y=0 is "top" and Y=CHUNK_SIZE-1 is "bottom"
+			int surface_y = -1;
+			bool water_surface = false;
+			
+			// First pass: find surface level (scan from top Y=0 to bottom Y=CHUNK_SIZE-1)
+			for(int voxel_y = 0; voxel_y < CHUNK_SIZE; ++voxel_y)
+			{
+				glm::u8vec3 voxel_index{voxel_x, static_cast<uint8_t>(voxel_y), voxel_z};
+				uint8_t voxel_material = chunk->get_voxel_material(voxel_index);
+				float world_y = static_cast<float>(chunk_world_pos.y + voxel_y);
+				
+				// If we find solid material (stone from pass 1), this is our surface
+				if(voxel_material == Materials::STONE)
+				{
+					surface_y = voxel_y;
+					break;
+				}
+				// If we're below water level and no solid found yet, check for water placement  
+				else if(world_y >= -10 && world_y <= -5 && voxel_material == 0 && surface_y == -1)
+				{
+					// This could be water surface
+					water_surface = true;
+					surface_y = voxel_y;
+				}
+			}
+			
+			// Second pass: assign materials based on distance from surface
+			for(uint8_t voxel_y{}; voxel_y < CHUNK_SIZE; ++voxel_y)
+			{
+				glm::u8vec3 voxel_index{voxel_x, voxel_y, voxel_z};
+				uint8_t voxel_material = chunk->get_voxel_material(voxel_index);
+				float world_y = static_cast<float>(chunk_world_pos.y + voxel_y);
+				
+				// Calculate depth from surface
+				int depth_from_surface = surface_y >= 0 ? static_cast<int>(voxel_y) - surface_y : -999;
+				
+				// Water placement - only in empty spaces that are below water level
+				if(world_y >= -10 && world_y <= -5 && voxel_material == 0)
+				{
+					chunk->set_voxel_material(voxel_index, Materials::WATER);
+					voxel_material = Materials::WATER;
+				}
+				// Sand near water level - only replace stone that's near water
+				else if(world_y >= -10 && world_y <= -3 && voxel_material == Materials::STONE && surface_y >= 0 && depth_from_surface >= -2 && depth_from_surface <= 2)
+				{
+					chunk->set_voxel_material(voxel_index, Materials::SAND);
+				}
+				// Surface and subsurface materials
+				else if(voxel_material == Materials::STONE && surface_y >= 0)
+				{
+					if(depth_from_surface == 0) // Surface
+					{
+						chunk->set_voxel_material(voxel_index, Materials::GRASS);
+						
+						// Only place trees on actual surface blocks
+						float random = static_cast<float>(rand() % 2000) / 100.0f;
+						const bool TREE = random < std::max(tree_area_set[noise_index_2d], 0.0f);
+						if(TREE)
+						{
+							// Place tree base at the grass block
+							glm::i16vec3 tree_base = glm::i16vec3(voxel_index);
+							create_tree(chunk, tree_base);
+						}
+					}
+					else if(depth_from_surface > 0 && depth_from_surface <= 4) // Below surface (dirt layer)
+					{
+						chunk->set_voxel_material(voxel_index, Materials::DIRT);
+					}
+					// Stone remains stone for deeper areas
+				}
+			}
+			
+			++noise_index_2d;
+		}
+	}
+
+	FastNoiseSIMD::FreeNoiseSet(tree_area_set);
 }
 
 void Tetra::World::transparent_neighbor_cull(Tetra::Chunk *chunk, const glm::u8vec3& voxel_position)
 {
-	// Simplified culling for infinite world - neighbor chunks would need to be considered
 	constexpr glm::i8vec3 NEIGHBORS[CUBE_FACES]{{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, 
 		{0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
 
@@ -510,21 +631,52 @@ void Tetra::World::transparent_neighbor_cull(Tetra::Chunk *chunk, const glm::u8v
 		glm::i16vec3 neighbor_position{voxel_position.x+NEIGHBORS[face].x,
 			voxel_position.y+NEIGHBORS[face].y, voxel_position.z+NEIGHBORS[face].z};
 
-		// Only handle within-chunk neighbors for now
+		bool is_transparent = true;
+
+		// Check if neighbor is within current chunk
 		if(neighbor_position.x >= 0 && neighbor_position.x < CHUNK_SIZE &&
 		   neighbor_position.y >= 0 && neighbor_position.y < CHUNK_SIZE &&
 		   neighbor_position.z >= 0 && neighbor_position.z < CHUNK_SIZE)
 		{
-			if(chunk->is_voxel_transparent(glm::u8vec3(neighbor_position)))
-				chunk->set_voxel_culled(voxel_position, false, face);
-			else
-				chunk->set_voxel_culled(voxel_position, true, face);
+			is_transparent = chunk->is_voxel_transparent(glm::u8vec3(neighbor_position));
 		}
 		else 
 		{
-			// At chunk boundary - assume not culled for now
-			chunk->set_voxel_culled(voxel_position, false, face);
+			// Neighbor is in a different chunk - try to find it
+			glm::ivec3 current_chunk_pos = world_pos_to_chunk_pos(chunk->get_translation());
+			glm::ivec3 neighbor_chunk_pos = current_chunk_pos;
+			glm::i16vec3 neighbor_voxel = neighbor_position;
+			
+			// Adjust chunk position and voxel position for cross-chunk access
+			for(uint8_t axis = 0; axis < 3; ++axis)
+			{
+				if(neighbor_voxel[axis] < 0) 
+				{
+					--neighbor_chunk_pos[axis];
+					neighbor_voxel[axis] = static_cast<int16_t>(CHUNK_SIZE) + neighbor_voxel[axis];
+				}
+				else if(neighbor_voxel[axis] >= CHUNK_SIZE) 
+				{
+					++neighbor_chunk_pos[axis];
+					neighbor_voxel[axis] = neighbor_voxel[axis] - static_cast<int16_t>(CHUNK_SIZE);
+				}
+			}
+
+			// Try to get the neighboring chunk
+			Tetra::Chunk* neighbor_chunk = get_chunk_at(neighbor_chunk_pos);
+			if(neighbor_chunk && !neighbor_chunk->is_being_deleted())
+			{
+				is_transparent = neighbor_chunk->is_voxel_transparent(glm::u8vec3(neighbor_voxel));
+			}
+			else
+			{
+				// If neighboring chunk doesn't exist, assume it's air (transparent)
+				is_transparent = true;
+			}
 		}
+
+		// Set culling based on transparency
+		chunk->set_voxel_culled(voxel_position, !is_transparent, face);
 	}
 }
 
@@ -537,5 +689,5 @@ void Tetra::World::cull_chunk(Tetra::Chunk *chunk)
 				glm::u8vec3 voxel_position{x, y, z};
 				if(!chunk->is_voxel_transparent(voxel_position))
 					transparent_neighbor_cull(chunk, voxel_position);
-			}
+    }
 } 

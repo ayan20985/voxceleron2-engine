@@ -14,11 +14,7 @@ int WinMain(HINSTANCE current, HINSTANCE previous, LPSTR arguments, int show)
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 
 	//Initialize
-	Oreginum::Core::initialize("Voxceleron2", {1280, 720}, false);
-	
-	// Set initial camera position above ground level
-	Oreginum::Camera::set_position(glm::fvec3(0.0f, 100.0f, 0.0f));
-	
+	Oreginum::Core::initialize("Voxceleron2", {1920, 1080}, false);
 	Tetra::World world{};
 
 	//Main loop

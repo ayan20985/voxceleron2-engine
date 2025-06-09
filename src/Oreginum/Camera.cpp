@@ -16,7 +16,7 @@ namespace
 	const glm::fvec3 world_up{0, -1, 0};
 	const glm::fvec3 world_right{1, 0, 0};
 	const glm::fvec3 world_forward{0, 0, 1};
-	glm::fvec3 position{515.465, -408.577, 409.905};
+	glm::fvec3 position{0, -100, 0};
 	glm::fvec3 direction{-.43704, .805192, -.400826};
 	glm::fvec3 forward{glm::normalize(direction*glm::fvec3{1, 0, 1})};
 	glm::fvec3 right{glm::normalize(glm::cross(direction, world_up))};
