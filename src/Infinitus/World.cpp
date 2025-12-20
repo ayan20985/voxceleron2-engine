@@ -1,36 +1,56 @@
 #include "FastNoiseSIMD/FastNoiseSIMD.h"
 #include "World.hpp"
+#include "../Oreginum/LoggerMacros.hpp"
 #include <limits>
 #include <algorithm>
 
 Tetra::World::World() : current_player_chunk(0, 0, 0), last_player_chunk(0, 0, 0),
 	populated(false), meshed(false)
 {
+	LOG_INFO("Initializing world system");
+	LOG_DEBUG("World parameters: THREADS=" + std::to_string(THREADS) +
+			  ", LOAD_DISTANCE=" + std::to_string(LOAD_DISTANCE) +
+			  ", RENDER_DISTANCE=" + std::to_string(RENDER_DISTANCE) +
+			  ", CHUNK_SIZE=" + std::to_string(CHUNK_SIZE));
+
 	// Initialize threading arrays
-        for(uint8_t i = 0; i < THREADS; ++i) {
-            is_thread_busy[i] = false;
-            was_thread_launched[i] = false;
-        }
-        
+    for(uint8_t i = 0; i < THREADS; ++i) {
+        is_thread_busy[i] = false;
+        was_thread_launched[i] = false;
+    }
+
+	LOG_DEBUG("Initialized " + std::to_string(THREADS) + " worker threads");
+
 	// Initial chunk loading around spawn point
 	// Force initial player chunk calculation
 	glm::fvec3 player_pos = Oreginum::Camera::get_position();
 	current_player_chunk = world_pos_to_chunk_pos(player_pos);
 	last_player_chunk = current_player_chunk;
-	
+
+	LOG_INFO("Player spawn position: (" + std::to_string(player_pos.x) + ", " +
+			 std::to_string(player_pos.y) + ", " + std::to_string(player_pos.z) + ")");
+	LOG_INFO("Initial chunk position: (" + std::to_string(current_player_chunk.x) + ", " +
+			 std::to_string(current_player_chunk.y) + ", " + std::to_string(current_player_chunk.z) + ")");
+
 	// Load initial chunks around player (horizontal infinite, limited vertical)
 	const int VERTICAL_LOAD_DISTANCE = 2; // Only 5 chunks vertically
+	int initial_chunk_count = 0;
 	for(int x = current_player_chunk.x - LOAD_DISTANCE; x <= current_player_chunk.x + LOAD_DISTANCE; ++x) {
 		for(int y = current_player_chunk.y - VERTICAL_LOAD_DISTANCE; y <= current_player_chunk.y + VERTICAL_LOAD_DISTANCE; ++y) {
 			for(int z = current_player_chunk.z - LOAD_DISTANCE; z <= current_player_chunk.z + LOAD_DISTANCE; ++z) {
 				glm::ivec3 chunk_pos(x, y, z);
 				load_chunk(chunk_pos);
+				++initial_chunk_count;
 			}
 		}
 	}
-	
+
+	LOG_INFO("Loaded " + std::to_string(initial_chunk_count) + " initial chunks");
+
 	//Initial world creation
+	LOG_INFO("Starting initial world population");
 	while(!populated) update();
+	LOG_INFO("Initial world population completed");
 }
 
 Tetra::World::~World()
@@ -41,14 +61,24 @@ Tetra::World::~World()
 	}
 	
 	// Clean up deletion queue
-	for(auto& d : deletion_queue) delete d.first;
-	
+	for(auto& d : deletion_queue)
+	{
+		LOG_DEBUG("Deleting chunk from deletion queue");
+		delete d.first;
+	}
+
 	// Clean up all loaded chunks
 	std::lock_guard<std::mutex> chunks_guard{chunks_mutex};
+	size_t chunks_to_delete = loaded_chunks.size();
 	for(auto& pair : loaded_chunks) {
-            delete pair.second;
+        delete pair.second;
 	}
 	loaded_chunks.clear();
+
+	if (chunks_to_delete > 0)
+	{
+		LOG_INFO("Cleaned up " + std::to_string(chunks_to_delete) + " loaded chunks during shutdown");
+	}
 }
 
 glm::ivec3 Tetra::World::world_pos_to_chunk_pos(const glm::fvec3& world_pos)
@@ -90,39 +120,45 @@ bool Tetra::World::is_chunk_in_load_distance(const glm::ivec3& chunk_pos, const 
 void Tetra::World::load_chunk(const glm::ivec3& chunk_pos)
 {
 	if(is_chunk_loaded(chunk_pos)) return;
-	
+
 	// Create new chunk
 	glm::fvec3 world_translation = glm::fvec3(chunk_pos) * static_cast<float>(CHUNK_SIZE);
-	Tetra::Chunk* new_chunk = new Tetra::Chunk(world_translation, glm::fvec3(0), 
+	Tetra::Chunk* new_chunk = new Tetra::Chunk(world_translation, glm::fvec3(0),
 		glm::u8vec3(chunk_pos.x & 255, chunk_pos.y & 255, chunk_pos.z & 255));
-	
+
 	// Add to loaded chunks
 	{
 		std::lock_guard<std::mutex> chunks_guard{chunks_mutex};
 		loaded_chunks[chunk_pos] = new_chunk;
 	}
+
+	LOG_DEBUG("Loaded chunk at (" + std::to_string(chunk_pos.x) + ", " +
+			 std::to_string(chunk_pos.y) + ", " + std::to_string(chunk_pos.z) + ")");
 }
 
 void Tetra::World::unload_chunk(const glm::ivec3& chunk_pos)
 {
 	Tetra::Chunk* chunk = get_chunk_at(chunk_pos);
 	if(!chunk) return;
-	
+
 	// Remove render groups immediately
-                chunk->remove_render_groups();
-                
+    chunk->remove_render_groups();
+
 	// Add to deletion queue
 	{
 		std::lock_guard<std::mutex> deletion_queue_guard{deletion_queue_mutex};
 		chunk->set_being_deleted(true);
 		deletion_queue.emplace_back(chunk, 0);
 	}
-	
+
 	// Remove from loaded chunks
 	{
 		std::lock_guard<std::mutex> chunks_guard{chunks_mutex};
 		loaded_chunks.erase(chunk_pos);
 	}
+
+	LOG_DEBUG("Unloaded chunk at (" + std::to_string(chunk_pos.x) + ", " +
+			 std::to_string(chunk_pos.y) + ", " + std::to_string(chunk_pos.z) + ")");
 }
 
 void Tetra::World::update_chunks_around_player()
@@ -189,6 +225,8 @@ void Tetra::World::update_chunks_around_player()
 
 void Tetra::World::population_pass_1(Tetra::Chunk *chunk, uint8_t thread_index)
 {
+	LOG_TIMER("Population pass 1");
+
 	populate_chunk_pass_1(chunk);
 
 	chunk->set_populated(0, true);
@@ -210,6 +248,8 @@ void Tetra::World::population_pass_2(Tetra::Chunk *chunk, uint8_t thread_index)
 
 void Tetra::World::mesh_chunk(Tetra::Chunk *chunk, uint8_t thread_index)
 {
+	LOG_TIMER("Chunk mesh generation");
+
 	//Cull, and mesh
 	cull_chunk(chunk);
 	chunk->create_mesh();
@@ -306,7 +346,7 @@ void Tetra::World::update()
 {
 	// Update chunks around player first
 	update_chunks_around_player();
-	
+
 	//Wait 3 frames to ensure buffers aren't in use, then delete enqueued chunks
 	if(deletion_queue.size())
 	{
@@ -322,22 +362,28 @@ void Tetra::World::update()
 					for(uint32_t j{}; j < add_queue.size(); ++j)
 						if(add_queue[j] == deletion_queue[i].first)
 							add_queue.erase(add_queue.begin()+j);
+					LOG_DEBUG("Deleting chunk after " + std::to_string(deletion_queue[i].second) + " frames wait");
 					delete deletion_queue[i].first;
 					deletion_queue.erase(deletion_queue.begin()+i);
+
+					// Note: deletion_queue modified, so we need to adjust index
+					--i;
 				}
 			} else ++deletion_queue[i].second;
 		}
 	}
 
 	//Create chunk render groups
+	uint8_t render_groups_created = 0;
 	for(uint8_t i{}; i < CHUNKS_ADDED_PER_FRAME; ++i)
 	{
 		if(add_queue.size())
 		{
-			if(!add_queue.front()->is_being_deleted()) 
+			if(!add_queue.front()->is_being_deleted())
 			{
 				add_queue.front()->create_render_groups();
 				add_queue.front()->add_render_groups();
+				++render_groups_created;
 			}
 			add_queue.erase(add_queue.begin());
 		} else break;
@@ -345,6 +391,7 @@ void Tetra::World::update()
 
 	//First pass population
 	Tetra::Chunk *population_pass_1_chunk{nullptr};
+	uint8_t population_pass_1_started = 0;
 	while(true)
 	{
 		population_pass_1_chunk = get_population_pass_1_chunk();
@@ -356,10 +403,12 @@ void Tetra::World::update()
 		population_pass_1_chunk->set_being_created(true);
 		threads[thread_index] = std::thread{&World::population_pass_1,
 			this, population_pass_1_chunk, thread_index};
+		++population_pass_1_started;
 	}
 
 	//If first pass population has completed, do second population pass
 	Tetra::Chunk *population_pass_2_chunk{nullptr};
+	uint8_t population_pass_2_started = 0;
 	while(!population_pass_1_chunk)
 	{
 		population_pass_2_chunk = get_population_pass_2_chunk();
@@ -371,6 +420,7 @@ void Tetra::World::update()
 		population_pass_2_chunk->set_being_created(true);
 		threads[thread_index] = std::thread{&World::population_pass_2,
 			this, population_pass_2_chunk, thread_index};
+		++population_pass_2_started;
 	}
 
 	populated = !population_pass_1_chunk && !population_pass_2_chunk;
@@ -378,6 +428,7 @@ void Tetra::World::update()
 	//If population has completed, cull and mesh unmeshed
 	//chunks, then add them to the add queue
 	Tetra::Chunk *unmeshed_chunk{nullptr};
+	uint8_t mesh_started = 0;
 	while(populated)
 	{
 		unmeshed_chunk = get_unmeshed_chunk();
@@ -389,9 +440,31 @@ void Tetra::World::update()
 		unmeshed_chunk->set_being_created(true);
 		threads[thread_index] = std::thread{&World::mesh_chunk,
 			this, unmeshed_chunk, thread_index};
+		++mesh_started;
 	}
 
 	meshed = !unmeshed_chunk;
+
+	// Log performance metrics occasionally
+	static int frame_counter = 0;
+	if (++frame_counter % 60 == 0) // Log every 60 frames (~1 second at 60fps)
+	{
+		std::lock_guard<std::mutex> chunks_guard{chunks_mutex};
+		LOG_DEBUG("World stats - Loaded chunks: " + std::to_string(loaded_chunks.size()) +
+				 ", Deletion queue: " + std::to_string(deletion_queue.size()) +
+				 ", Add queue: " + std::to_string(add_queue.size()));
+
+		if (render_groups_created > 0 || population_pass_1_started > 0 ||
+			population_pass_2_started > 0 || mesh_started > 0)
+		{
+			std::stringstream ss;
+			ss << "Frame activity - Render groups: " << static_cast<int>(render_groups_created)
+			   << ", Pop1: " << static_cast<int>(population_pass_1_started)
+			   << ", Pop2: " << static_cast<int>(population_pass_2_started)
+			   << ", Mesh: " << static_cast<int>(mesh_started);
+			LOG_DEBUG(ss.str());
+		}
+	}
 }
 
 float *Tetra::World::simplex(const glm::ivec3& offset, const glm::ivec3& size,

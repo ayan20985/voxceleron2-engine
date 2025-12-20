@@ -8,6 +8,7 @@
 #include "Camera.hpp"
 #include "../Tetra/Common.hpp"
 #include "Main Renderer.hpp"
+#include "LoggerMacros.hpp"
 
 namespace
 {
@@ -284,7 +285,14 @@ namespace
 
 void Oreginum::Main_Renderer::initialize()
 {
-	bloom_resolution = glm::fvec2(Window::get_resolution())/static_cast<float>(BLOOM_DERESOLUTION);
+	LOG_INFO("Initializing main renderer");
+	LOG_TIMER("Main renderer initialization");
+
+	auto window_res = Window::get_resolution();
+	bloom_resolution = glm::fvec2(window_res)/static_cast<float>(BLOOM_DERESOLUTION);
+
+	LOG_DEBUG("Window resolution: " + std::to_string(window_res.x) + "x" + std::to_string(window_res.y));
+	LOG_DEBUG("Bloom resolution: " + std::to_string((int)bloom_resolution.x) + "x" + std::to_string((int)bloom_resolution.y));
 
 	swapchain = {*Renderer_Core::get_instance(), Renderer_Core::get_surface(),
 		Renderer_Core::get_device(), Renderer_Core::get_temporary_command_buffer()};
@@ -369,6 +377,8 @@ void Oreginum::Main_Renderer::initialize()
 	create_and_write_buffer(&bloom_blur_buffer, &bloom_blur_mode, sizeof(uint32_t));
 
 	write_descriptor_sets();
+
+	LOG_INFO("Main renderer initialized successfully");
 }
 
 void Oreginum::Main_Renderer::write_descriptor_sets()
@@ -385,6 +395,9 @@ void Oreginum::Main_Renderer::write_descriptor_sets()
 
 void Oreginum::Main_Renderer::create_render_passes_and_pipelines()
 {
+	LOG_DEBUG("Creating render passes and pipelines");
+	LOG_TIMER("Render passes and pipelines creation");
+
 	//Dependencies
 	render_pass_dependencies.clear();
 	render_pass_dependencies.resize(2);
@@ -403,9 +416,16 @@ void Oreginum::Main_Renderer::create_render_passes_and_pipelines()
 	create_render_pass(&translucent_render_pass, {DEPTH_TRANSLUCENT, RGB});
 	create_render_pass(&ssao_render_pass, {SSAO});
 	create_render_pass(&ssao_blur_render_pass, {SSAO});
-	if(Vulkan::Swapchain::MULTISAMPLE) create_render_pass(
-		&lighting_render_pass, {HDR_RESOLVE, HDR_MULTISAMPLE});
-	else create_render_pass(&lighting_render_pass, {HDR});
+	if(Vulkan::Swapchain::MULTISAMPLE)
+	{
+		create_render_pass(&lighting_render_pass, {HDR_RESOLVE, HDR_MULTISAMPLE});
+		LOG_DEBUG("Created multisample lighting render pass");
+	}
+	else
+	{
+		create_render_pass(&lighting_render_pass, {HDR});
+		LOG_DEBUG("Created single-sample lighting render pass");
+	}
 	create_render_pass(&bloom_blur_render_pass, {BLOOM});
 	create_render_pass(&composition_render_pass, {SWAPCHAIN});
 
@@ -428,15 +448,19 @@ void Oreginum::Main_Renderer::create_render_passes_and_pipelines()
 	translucent_pipeline = Renderer_Core::create_pipeline(Window::get_resolution(),
 		translucent_render_pass, "Translucent Vertex", "Translucent Fragment", 2,
 		translucent_descriptor_set_layout);
+
+	std::string ssao_fragment_shader = Vulkan::Swapchain::MULTISAMPLE ?
+		"SSAO Fragment Multisampled" : "SSAO Fragment";
 	ssao_pipeline = Renderer_Core::create_pipeline(Window::get_resolution(),
-		ssao_render_pass, "SSAO Vertex", Vulkan::Swapchain::MULTISAMPLE ?
-		"SSAO Fragment Multisampled" : "SSAO Fragment", 3, {ssao_descriptor_set.get_layout()});
+		ssao_render_pass, "SSAO Vertex", ssao_fragment_shader, 3, {ssao_descriptor_set.get_layout()});
 	ssao_blur_pipeline = Renderer_Core::create_pipeline(Window::get_resolution(),
 		ssao_blur_render_pass, "SSAO Blur Vertex", "SSAO Blur Fragment", 4,
 		{ssao_blur_descriptor_set.get_layout()});
+
+	std::string lighting_fragment_shader = Vulkan::Swapchain::MULTISAMPLE ?
+		"Lighting Fragment Multisampled" : "Lighting Fragment";
 	lighting_pipeline = Renderer_Core::create_pipeline(Window::get_resolution(),
-		lighting_render_pass, "Lighting Vertex", Vulkan::Swapchain::MULTISAMPLE ?
-			"Lighting Fragment Multisampled" : "Lighting Fragment", 5,
+		lighting_render_pass, "Lighting Vertex", lighting_fragment_shader, 5,
 		{lighting_descriptor_set.get_layout()});
 	bloom_blur_pipeline = Renderer_Core::create_pipeline(bloom_resolution,
 		bloom_blur_render_pass, "Bloom Blur Vertex", "Bloom Blur Fragment", 6,
@@ -444,6 +468,8 @@ void Oreginum::Main_Renderer::create_render_passes_and_pipelines()
 	composition_pipeline = Renderer_Core::create_pipeline(Window::get_resolution(),
 		composition_render_pass, "Composition Vertex", "Composition Fragment", 7,
 		{composition_descriptor_set.get_layout()});
+
+	LOG_DEBUG("Render passes and pipelines created successfully");
 }
 
 void Oreginum::Main_Renderer::create_images_and_framebuffers()
@@ -620,8 +646,18 @@ void Oreginum::Main_Renderer::render()
 	uint32_t image_index;
 	vk::Result result{Renderer_Core::get_device()->get().acquireNextImageKHR(swapchain.get(),
 		std::numeric_limits<uint64_t>::max(), image_available.get(), nullptr, &image_index)};
+
 	if(result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
-		Core::error("Could not aquire a Vulkan swapchain image.");
+	{
+		LOG_WARNING("Swapchain image acquisition returned suboptimal/out-of-date, reinitializing swapchain");
+		reinitialize_swapchain();
+		return;
+	}
+	else if(result != vk::Result::eSuccess)
+	{
+		LOG_ERROR("Failed to acquire swapchain image: " + vk::to_string(result));
+		Core::error("Could not acquire a Vulkan swapchain image.");
+	}
 
 	//Submit render commands
 	Renderer_Core::submit_command_buffers({command_buffers[image_index].get()},
@@ -637,5 +673,13 @@ void Oreginum::Main_Renderer::render()
 
 	result = Renderer_Core::get_device()->get_present_queue().presentKHR(present_information);
 	if(result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
+	{
+		LOG_WARNING("Presentation returned suboptimal/out-of-date, reinitializing swapchain");
+		reinitialize_swapchain();
+	}
+	else if(result != vk::Result::eSuccess)
+	{
+		LOG_ERROR("Failed to present swapchain image: " + vk::to_string(result));
 		Core::error("Could not submit Vulkan presentation queue.");
+	}
 }

@@ -25,6 +25,12 @@ namespace Tetra
 	constexpr uint32_t CHUNK_SIZE_CUBED{CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE};
 	static constexpr float VOXEL_SIZE{1.f};
 
+	// LOD (Level of Detail) constants
+	constexpr uint8_t LOD_LEVELS{5};
+	constexpr float LOD_DISTANCE_THRESHOLDS[LOD_LEVELS]{0.f, 2.f, 4.f, 8.f, 16.f}; // Distance in chunks
+	constexpr uint8_t LOD_SAMPLE_RATES[LOD_LEVELS]{1, 2, 4, 8, 16}; // Voxel sampling rates
+	constexpr uint8_t MERGE_FACTOR{4}; // For LOD 4, merge 4x4x4 chunks
+
 	struct Voxel{ uint8_t cull_mask, material; };
 
 	static const glm::u8vec3 TREE_SIZE{5, 7, 5};

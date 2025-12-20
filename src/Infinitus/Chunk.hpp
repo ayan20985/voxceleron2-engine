@@ -17,8 +17,14 @@ namespace Tetra
 
 		void create_mesh();
 		void create_render_groups();
-		void add_render_groups(){ for(Render_Group& r : render_groups) r.add(); }
-		void remove_render_groups(){ for(Render_Group& r : render_groups) r.remove(); }
+		void add_render_groups(){ for(Render_Group& r : lod_render_groups[current_lod_level]) r.add(); }
+		void remove_render_groups(){ for(auto& lod_groups : lod_render_groups) for(Render_Group& r : lod_groups) r.remove(); }
+
+		// LOD methods
+		void generate_lod_meshes();
+		void set_lod_level(uint8_t lodLevel);
+		uint8_t get_lod_level() const { return current_lod_level; }
+		bool is_lod_generated(uint8_t lodLevel) const { return lod_meshed[lodLevel]; }
 
 		void translate(const glm::fvec3& translation, const glm::u8vec3& index_translation);
 
@@ -70,8 +76,10 @@ namespace Tetra
 		bool culled, populated[2], meshed, being_created, being_deleted;
 		Voxel voxels[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 		glm::fvec3 translation, world_translation;
-		std::vector<Render_Group> render_groups;
-		std::unordered_map<uint8_t, Mesh_Data> mesh_datas;
+		std::array<std::vector<Render_Group>, LOD_LEVELS> lod_render_groups;
+		std::array<std::unordered_map<uint8_t, Mesh_Data>, LOD_LEVELS> lod_mesh_datas;
+		std::array<bool, LOD_LEVELS> lod_meshed{false};
+		uint8_t current_lod_level{0};
 		glm::u8vec3 index;
 
 		void greedy_face(std::unordered_map<uint8_t, Mesh_Data> *mesh_datas,
@@ -84,5 +92,5 @@ namespace Tetra
 		void greedy_main(std::unordered_map<uint8_t, Mesh_Data> *mesh_datas,
 			uint32_t *face, uint8_t axis, uint8_t sign, uint8_t layer);
 		void greedy_mesh_simplification(std::unordered_map<uint8_t, Mesh_Data> *mesh_datas);
-	};
-}
+
+		//

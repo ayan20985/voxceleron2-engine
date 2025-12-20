@@ -4,6 +4,7 @@
 #include "Renderable.hpp"
 #include "Main Renderer.hpp"
 #include "Renderer Core.hpp"
+#include "LoggerMacros.hpp"
 
 namespace
 {
@@ -61,57 +62,103 @@ uint32_t Oreginum::Renderer_Core::get_padded_uniform_size(uint32_t uniform_size)
 
 void Oreginum::Renderer_Core::initialize()
 {
-	if(instance.get()) return;
+	if(instance.get())
+	{
+		LOG_DEBUG("Renderer Core already initialized, skipping");
+		return;
+	}
+
+	LOG_INFO("Initializing Renderer Core");
+	LOG_TIMER("Renderer Core initialization");
 
 	//Initialization
+	LOG_DEBUG("Creating Vulkan instance");
 	instance = std::make_shared<Vulkan::Instance>(Core::get_debug());
+	LOG_DEBUG("Vulkan instance created");
+
+	LOG_DEBUG("Creating Vulkan surface");
 	surface = std::make_shared<Vulkan::Surface>(instance);
+	LOG_DEBUG("Vulkan surface created");
+
+	LOG_DEBUG("Creating Vulkan device");
 	device = std::make_shared<Vulkan::Device>(*instance, *surface);
+	LOG_DEBUG("Vulkan device created");
+
+	LOG_DEBUG("Creating command pools");
 	temporary_command_pool = {device, device->get_graphics_queue_family_index(),
 		vk::CommandPoolCreateFlagBits::eResetCommandBuffer};
 	temporary_command_buffer = {device, temporary_command_pool};
 	command_pool = {device, device->get_graphics_queue_family_index()};
+	LOG_DEBUG("Command pools created");
 
 	//Calculate uniform buffer padding
 	minimum_offset = static_cast<uint32_t>(device->
 		 get_properties().limits.minUniformBufferOffsetAlignment);
 	uniform_size = static_cast<uint32_t>(sizeof(Renderable::Uniforms));
 	padded_uniform_size = get_padded_uniform_size(uniform_size);
+	LOG_DEBUG("Uniform buffer padding calculated: " + std::to_string(padded_uniform_size) + " bytes (minimum offset: " + std::to_string(minimum_offset) + ")");
 
 	//Static descriptors
+	LOG_DEBUG("Creating static descriptor pool");
 	static_descriptor_pool = {device, {{vk::DescriptorType::eUniformBufferDynamic, 1},
 		{vk::DescriptorType::eUniformBuffer, 7}, {vk::DescriptorType::eCombinedImageSampler, 17}}};
+	LOG_DEBUG("Creating uniform descriptor set");
 	uniform_descriptor_set = {device, static_descriptor_pool,
 		{{vk::DescriptorType::eUniformBufferDynamic, vk::ShaderStageFlagBits::eVertex}}};
+	LOG_DEBUG("Creating texture descriptor set");
 	texture_descriptor_set = {device, static_descriptor_pool,
 		{{vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}}};
+	LOG_DEBUG("Static descriptors created");
 
+	LOG_DEBUG("Creating uniform buffer");
 	create_uniform_buffer();
+	LOG_DEBUG("Creating descriptors");
 	create_descriptors();
 
 	//Call renderers to initialize
+	LOG_DEBUG("Initializing main renderer");
 	Main_Renderer::initialize();
+
+	LOG_INFO("Renderer Core initialized successfully");
 }
 
 uint32_t Oreginum::Renderer_Core::add(Renderer_Type renderer_type, Renderable *renderable)
 {
-	::renderables.emplace(Key{renderer_type, ++id}, renderable);
+	uint32_t new_id = ++id;
+	::renderables.emplace(Key{renderer_type, new_id}, renderable);
 	rerecord = true;
-	return id;
+	LOG_DEBUG("Added renderable (type: " + std::to_string(static_cast<int>(renderer_type)) + ", id: " + std::to_string(new_id) + "), total renderables: " + std::to_string(renderables.size()));
+	return new_id;
 }
 
 void Oreginum::Renderer_Core::remove(Renderer_Type renderer_type, uint32_t id)
-{ renderables.erase(Key{renderer_type, id}), rerecord = true; }
+{
+	renderables.erase(Key{renderer_type, id});
+	rerecord = true;
+	LOG_DEBUG("Removed renderable (type: " + std::to_string(static_cast<int>(renderer_type)) + ", id: " + std::to_string(id) + "), remaining renderables: " + std::to_string(renderables.size()));
+}
 
-void Oreginum::Renderer_Core::clear(){ renderables.clear(), rerecord = true; }
+void Oreginum::Renderer_Core::clear()
+{
+	uint32_t count = static_cast<uint32_t>(renderables.size());
+	renderables.clear();
+	rerecord = true;
+	LOG_DEBUG("Cleared all renderables (removed " + std::to_string(count) + " renderables)");
+}
 
 void Oreginum::Renderer_Core::create_uniform_buffer()
 {
 	if(!renderables.empty())
 	{
 		uniform_buffer_size = static_cast<uint32_t>(renderables.size())*padded_uniform_size;
+		LOG_DEBUG("Creating uniform buffer: " + std::to_string(uniform_buffer_size) + " bytes for " + std::to_string(renderables.size()) + " renderables");
 		uniform_buffer = {device, temporary_command_buffer, vk::BufferUsageFlagBits::eUniformBuffer,
 			uniform_buffer_size, nullptr, padded_uniform_size};
+		LOG_DEBUG("Uniform buffer created");
+	}
+	else
+	{
+		LOG_DEBUG("Skipping uniform buffer creation (no renderables)");
 	}
 }
 

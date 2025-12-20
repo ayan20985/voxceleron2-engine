@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <GLM/glm.hpp>
+#include "Logger.hpp"
 
 namespace Oreginum
 {
@@ -11,6 +12,7 @@ namespace Oreginum
 		void destroy();
 
 		void error(const std::string& error);
+		void fatal_error(const std::string& error);
 		bool update();
 
 		uint32_t get_refresh_rate();

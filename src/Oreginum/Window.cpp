@@ -2,6 +2,7 @@
 #include "Window.hpp"
 #include "Mouse.hpp"
 #include "Keyboard.hpp"
+#include "LoggerMacros.hpp"
 
 namespace
 {
@@ -31,9 +32,18 @@ namespace
 				GET_WHEEL_DELTA_WPARAM(message_information)/WHEEL_DELTA); break;
 
 		//Window
-		case WM_SETFOCUS: focused = true; break;
-		case WM_KILLFOCUS: focused = false; break;
-		case WM_CLOSE: closed = true; break;
+		case WM_SETFOCUS: 
+			focused = true; 
+			LOG_DEBUG("Window gained focus");
+			break;
+		case WM_KILLFOCUS: 
+			focused = false; 
+			LOG_DEBUG("Window lost focus");
+			break;
+		case WM_CLOSE: 
+			closed = true; 
+			LOG_INFO("Window close requested");
+			break;
 		default: return DefWindowProc(window, message,
 			message_information, message_informaton_long);
 		}
@@ -43,18 +53,25 @@ namespace
 
 void Oreginum::Window::initialize(const std::string& title, const glm::ivec2& resolution, bool debug)
 {
+	LOG_INFO("Initializing window");
+	LOG_DEBUG("Window title: " + title);
+	LOG_DEBUG("Window resolution: " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y));
+	LOG_DEBUG("Debug console: " + std::string(debug ? "enabled" : "disabled"));
+
 	::title = title;
 	instance = GetModuleHandle(NULL);
 
 	if(debug)
 	{
 		//Create console
+		LOG_DEBUG("Creating debug console");
 		AllocConsole();
 		AttachConsole(GetCurrentProcessId());
 		freopen_s(&stream, "CONOUT$", "w", stdout);
 	}
 
 	//Create window
+	LOG_DEBUG("Registering window class");
 	WNDCLASSEX window_information;
 	window_information.cbSize = sizeof(WNDCLASSEX);
 	window_information.style = CS_HREDRAW | CS_VREDRAW;
@@ -72,14 +89,25 @@ void Oreginum::Window::initialize(const std::string& title, const glm::ivec2& re
 
 	old_resolution = ::resolution = resolution;
 	position = Core::get_screen_resolution()/2-resolution/2;
+	LOG_DEBUG("Window position: (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ")");
+	
+	LOG_DEBUG("Creating window");
 	window = CreateWindow(title.c_str(), title.c_str(), WS_POPUP | WS_VISIBLE,
 		position.x, position.y, resolution.x, resolution.y, NULL, NULL, instance, NULL);
-	if(!window) Core::error("Could not create window.");
+	if(!window)
+	{
+		LOG_FATAL("Failed to create window");
+		Core::error("Could not create window.");
+	}
+	
+	LOG_INFO("Window created successfully");
 }
 
 void Oreginum::Window::destroy()
 {
+	LOG_INFO("Destroying window");
 	DestroyWindow(window);
+	LOG_DEBUG("Window destroyed");
 	//FreeConsole();
 }
 
@@ -106,14 +134,28 @@ void Oreginum::Window::update()
 	//Resize
 	else if(Mouse::is_held(Button::RIGHT_MOUSE) && Keyboard::is_held(CTRL) && !Mouse::is_locked())
 	{
+		glm::uvec2 old_res = resolution;
 		resolution = {glm::clamp(glm::ivec2{resolution}+Mouse::get_delta(),
 			glm::ivec2{MINIMUM_RESOLUTION}, glm::ivec2{INT32_MAX})};
 		MoveWindow(window, position.x, position.y, resolution.x, resolution.y, false);
 
 		//Set resizing booleans
 		::began_resizing = Mouse::was_pressed(Button::RIGHT_MOUSE);
+		if(::began_resizing)
+		{
+			LOG_DEBUG("Window resize started");
+		}
+		if(resolution != old_res)
+		{
+			LOG_DEBUG("Window resized to: " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y));
+		}
 		resizing = true;
-	} else if(resizing) resized = true, resizing = false;
+	} else if(resizing)
+	{
+		resized = true;
+		resizing = false;
+		LOG_DEBUG("Window resize completed");
+	}
 }
 
 HINSTANCE Oreginum::Window::get_instance(){ return instance; }
