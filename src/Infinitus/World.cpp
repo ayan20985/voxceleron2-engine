@@ -485,16 +485,16 @@ void Tetra::World::populate_chunk_pass_1(Tetra::Chunk *chunk)
 	
 	const glm::ivec3 CHUNK_OFFSET{chunk_offset.x, chunk_offset.y, chunk_offset.z},
 		OFFSET_2D{CHUNK_OFFSET.z, CHUNK_OFFSET.x, 0}, SIZE_2D{CHUNK_SIZE, CHUNK_SIZE, 1};
-	constexpr uint8_t RISES_BASES_HEIGHT{20}, EARTH_RANGE{50}, MOUNTAINOUSNESS_RANGE{200};
+	constexpr uint16_t RISES_BASES_HEIGHT{40}, EARTH_RANGE{120}, MOUNTAINOUSNESS_RANGE{500};
 
-	float *mountainousness_set{simplex(OFFSET_2D, SIZE_2D, .003f, 7, SEED)};
+	float *mountainousness_set{simplex(OFFSET_2D, SIZE_2D, .0008f, 8, SEED)};
 
-	float *earth_set{simplex(OFFSET_2D, SIZE_2D, .0005f, 1, SEED+1)};
-	float *hills_set{simplex(OFFSET_2D, SIZE_2D, .01f, 2, SEED+2)};
-	float *detail_set{simplex(OFFSET_2D, SIZE_2D, .01f, 1, SEED+3)};
+	float *earth_set{simplex(OFFSET_2D, SIZE_2D, .00015f, 2, SEED+1)};
+	float *hills_set{simplex(OFFSET_2D, SIZE_2D, .003f, 3, SEED+2)};
+	float *detail_set{simplex(OFFSET_2D, SIZE_2D, .005f, 3, SEED+3)};
 	float *plateau_fill_set{simplex({CHUNK_OFFSET.z, CHUNK_OFFSET.x, CHUNK_OFFSET.y},
-		{CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE}, .002f, 7, SEED+4)};
-	float *plateau_height_set{simplex(OFFSET_2D, SIZE_2D, .003f, 2, SEED+5)};
+		{CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE}, .0008f, 9, SEED+4)};
+	float *plateau_height_set{simplex(OFFSET_2D, SIZE_2D, .001f, 3, SEED+5)};
 		
 	//Create ground
 	uint32_t noise_index_2d{}, noise_index_3d{};
@@ -510,8 +510,8 @@ void Tetra::World::populate_chunk_pass_1(Tetra::Chunk *chunk)
 				float VOXEL_Y{static_cast<float>(chunk_offset.y + y)};
 
 				const float EARTH{earth_set[noise_index_2d]*EARTH_RANGE};
-				const float HILLS{hills_set[noise_index_2d]*5*MOUNTAINOUSNESS/30};
-				const float DETAIL{detail_set[noise_index_2d]*2};
+				const float HILLS{hills_set[noise_index_2d]*15*MOUNTAINOUSNESS/30};
+				const float DETAIL{detail_set[noise_index_2d]*6};
 				const float GROUND{EARTH+HILLS+DETAIL};
 
 				const float PLATEAU_HEIGHT{EARTH+plateau_height_set[noise_index_2d]*
@@ -632,8 +632,8 @@ void Tetra::World::populate_chunk_pass_2(Tetra::Chunk *chunk)
 					surface_y = voxel_y;
 					break;
 				}
-				// If we're below water level and no solid found yet, check for water placement  
-				else if(world_y >= -10 && world_y <= -5 && voxel_material == 0 && surface_y == -1)
+				// If we're below water level and no solid found yet, check for water placement
+				else if(world_y >= -30 && world_y <= -25 && voxel_material == 0 && surface_y == -1)
 				{
 					// This could be water surface
 					water_surface = true;
@@ -652,13 +652,13 @@ void Tetra::World::populate_chunk_pass_2(Tetra::Chunk *chunk)
 				int depth_from_surface = surface_y >= 0 ? static_cast<int>(voxel_y) - surface_y : -999;
 				
 				// Water placement - only in empty spaces that are below water level
-				if(world_y >= -10 && world_y <= -5 && voxel_material == 0)
+				if(world_y >= -30 && world_y <= -25 && voxel_material == 0)
 				{
 					chunk->set_voxel_material(voxel_index, Materials::WATER);
 					voxel_material = Materials::WATER;
 				}
 				// Sand near water level - only replace stone that's near water
-				else if(world_y >= -10 && world_y <= -3 && voxel_material == Materials::STONE && surface_y >= 0 && depth_from_surface >= -2 && depth_from_surface <= 2)
+				else if(world_y >= -30 && world_y <= -20 && voxel_material == Materials::STONE && surface_y >= 0 && depth_from_surface >= -2 && depth_from_surface <= 2)
 				{
 					chunk->set_voxel_material(voxel_index, Materials::SAND);
 				}

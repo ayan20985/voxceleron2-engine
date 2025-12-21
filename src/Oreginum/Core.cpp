@@ -32,7 +32,7 @@ void Oreginum::Core::initialize(const std::string& title,
 
 	// Initialize logger first
 	Logger::initialize("logs/voxceleron2.log",
-		debug ? Logger::Level::DEBUG : Logger::Level::INFO, !terminal);
+		Logger::Level::TRACE, !terminal);
 
 	LOG_INFO("Initializing Voxceleron2 Engine");
 	LOG_INFO("Title: " + title + ", Resolution: " + std::to_string(resolution.x) + "x" + std::to_string(resolution.y));
