@@ -1,6 +1,7 @@
 #include "FastNoiseSIMD/FastNoiseSIMD.h"
 #include "World.hpp"
 #include "../Oreginum/LoggerMacros.hpp"
+#include "../Oreginum/MemoryTracker.hpp"
 #include <limits>
 #include <algorithm>
 
@@ -447,7 +448,7 @@ void Tetra::World::update()
 
 	// Log performance metrics occasionally
 	static int frame_counter = 0;
-	if (++frame_counter % 60 == 0) // Log every 60 frames (~1 second at 60fps)
+	if (++frame_counter % 1200 == 0) // Log every 1200 frames (~20 seconds at 60fps)
 	{
 		std::lock_guard<std::mutex> chunks_guard{chunks_mutex};
 		LOG_DEBUG("World stats - Loaded chunks: " + std::to_string(loaded_chunks.size()) +
@@ -473,8 +474,14 @@ float *Tetra::World::simplex(const glm::ivec3& offset, const glm::ivec3& size,
 	FastNoiseSIMD *generator{FastNoiseSIMD::NewFastNoiseSIMD(seed)};
 	generator->SetFrequency(frequency);
 	generator->SetFractalOctaves(octaves);
-	return generator->GetSimplexFractalSet(offset.x,
+	float *noise_set = generator->GetSimplexFractalSet(offset.x,
 		offset.y, offset.z, size.x, size.y, size.z);
+
+	// Track the allocation
+	size_t allocation_size = size.x * size.y * size.z * sizeof(float);
+	TRACK_ALLOCATION(allocation_size, "FastNoiseSIMD");
+
+	return noise_set;
 }
 
 void Tetra::World::populate_chunk_pass_1(Tetra::Chunk *chunk)
@@ -527,11 +534,26 @@ void Tetra::World::populate_chunk_pass_1(Tetra::Chunk *chunk)
 			++noise_index_2d;
 		}
 
+	// Track deallocations
+	size_t array_size_2d = SIZE_2D.x * SIZE_2D.y * sizeof(float);
+	size_t array_size_3d = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(float);
+
+	TRACK_DEALLOCATION(array_size_2d, "FastNoiseSIMD");
 	FastNoiseSIMD::FreeNoiseSet(plateau_height_set);
+
+	TRACK_DEALLOCATION(array_size_3d, "FastNoiseSIMD");
 	FastNoiseSIMD::FreeNoiseSet(plateau_fill_set);
+
+	TRACK_DEALLOCATION(array_size_2d, "FastNoiseSIMD");
 	FastNoiseSIMD::FreeNoiseSet(detail_set);
+
+	TRACK_DEALLOCATION(array_size_2d, "FastNoiseSIMD");
 	FastNoiseSIMD::FreeNoiseSet(hills_set);
+
+	TRACK_DEALLOCATION(array_size_2d, "FastNoiseSIMD");
 	FastNoiseSIMD::FreeNoiseSet(earth_set);
+
+	TRACK_DEALLOCATION(array_size_2d, "FastNoiseSIMD");
 	FastNoiseSIMD::FreeNoiseSet(mountainousness_set);
 }
 
@@ -691,6 +713,9 @@ void Tetra::World::populate_chunk_pass_2(Tetra::Chunk *chunk)
 		}
 	}
 
+	// Track tree_area_set deallocation
+	size_t array_size_2d = SIZE_2D.x * SIZE_2D.y * sizeof(float);
+	TRACK_DEALLOCATION(array_size_2d, "FastNoiseSIMD");
 	FastNoiseSIMD::FreeNoiseSet(tree_area_set);
 }
 
