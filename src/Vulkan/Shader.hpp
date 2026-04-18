@@ -3,7 +3,7 @@
 #define NOMINMAX
 #define VK_USE_PLATFORM_WIN32_KHR
 #define VULKAN_HPP_NO_EXCEPTIONS
-#include <Vulkan/vulkan.h>
+#include <vulkan/vulkan.h>
 #include "Device.hpp"
 
 namespace Oreginum::Vulkan

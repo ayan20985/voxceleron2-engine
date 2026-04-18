@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\voxceleron2-engine\build\x64\Release\voxceleron2.exe</FullPath>
+      <FullPath>C:\2w-reborn\voxceleron2-engine\build\x64\Release\voxceleron2.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

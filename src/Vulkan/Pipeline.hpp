@@ -2,7 +2,7 @@
 #define NOMINMAX
 #define VK_USE_PLATFORM_WIN32_KHR
 #define VULKAN_HPP_NO_EXCEPTIONS
-#include <Vulkan/vulkan.hpp>
+#include <vulkan/vulkan.hpp>
 #include "Device.hpp"
 #include "Shader.hpp"
 #include "Descriptor Set.hpp"

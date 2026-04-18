@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <GLM/glm.hpp>
+#include <glm/glm.hpp>
 #include "../Vulkan/Image.hpp"
 #include "../Vulkan/Sampler.hpp"
 

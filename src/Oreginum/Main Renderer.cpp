@@ -1,6 +1,6 @@
 #include <iostream>
 #include <random>
-#include <GLM/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "Renderer Core.hpp"
 #include "Core.hpp"
 #include "Renderable.hpp"

@@ -2,7 +2,7 @@
 #include <string>
 #define NOMINMAX
 #include <windows.h>
-#include <GLM/glm.hpp>
+#include <glm/glm.hpp>
 
 namespace Oreginum
 {

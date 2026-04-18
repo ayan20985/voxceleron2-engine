@@ -5,7 +5,7 @@
 #define NOMINMAX
 #define VK_USE_PLATFORM_WIN32_KHR
 #define VULKAN_HPP_NO_EXCEPTIONS
-#include <Vulkan/vulkan.hpp>
+#include <vulkan/vulkan.hpp>
 #include "Instance.hpp"
 #include "Surface.hpp"
 

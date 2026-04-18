@@ -1,5 +1,5 @@
 ## File Logging
-The engine will produce log files in the logs/ folder in the root. This log folder can be made more or less verbose via the doc-error-logging-system.md.
+The engine will produce log files in the logs/ folder in the root. This log folder can be made more or less verbose via the `doc-error-logging-system.md`.
 
 ## Dependencies
 The following dependencies are required to build the engine:
@@ -26,11 +26,17 @@ You can also build the project from the command line:
 
 1. Launch the Visual Studio Developer PowerShell:
    ```powershell
-   & 'C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1'
+   $env:VULKAN_SDK = [System.Environment]::GetEnvironmentVariable("VULKAN_SDK", "Machine")
    ```
 
 2. Navigate to the project directory and build using MSBuild:
    ```powershell
-   cd C:\path\to\voxceleron2-engine
-   MSBuild.exe voxceleron2.sln /p:Configuration=Release /p:Platform=x64
+   $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -requires Microsoft.Component.MSBuild -property installationPath
+   $msbuild = Join-Path $vs "MSBuild\Current\Bin\MSBuild.exe"
+   ```
+
+3. **Build** (from the repo root, the folder that contains `voxceleron2.sln`):
+   ```powershell
+   Set-Location C:\path\to\voxceleron2-engine
+   & $msbuild voxceleron2.sln /p:Configuration=Release /p:Platform=x64 /v:m
    ```

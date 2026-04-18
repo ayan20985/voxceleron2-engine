@@ -43,3 +43,48 @@ C:\voxceleron2-engine\build\x64\Release\Resources\Textures\Leaves.png
 C:\voxceleron2-engine\build\x64\Release\Resources\Textures\Sand.png
 C:\voxceleron2-engine\build\x64\Release\Resources\Textures\Stone.png
 C:\voxceleron2-engine\build\x64\Release\Resources\Textures\Wood.png
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\# Shader Compiler.bat
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Bloom Blur Fragment.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Bloom Blur Fragment.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Bloom Blur Vertex.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Bloom Blur Vertex.vert
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Composition Fragment.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Composition Fragment.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Composition Vertex.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Composition Vertex.vert
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\G-Buffer Fragment.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\G-Buffer Fragment.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\G-Buffer Vertex.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\G-Buffer Vertex.vert
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Lighting Fragment Multisampled.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Lighting Fragment Multisampled.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Lighting Fragment.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Lighting Fragment.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Lighting Vertex.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Lighting Vertex.vert
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Shadow Depth Fragment.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Shadow Depth Fragment.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Shadow Depth Vertex.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Shadow Depth Vertex.vert
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Blur Fragment.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Blur Fragment.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Blur Vertex.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Blur Vertex.vert
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Fragment Multisampled.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Fragment Multisampled.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Fragment.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Fragment.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Vertex.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\SSAO Vertex.vert
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Translucent Fragment.frag
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Translucent Fragment.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Translucent Vertex.spv
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Shaders\Translucent Vertex.vert
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Textures\Dirt Specular.png
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Textures\Dirt.png
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Textures\Grass Side.png
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Textures\Grass.png
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Textures\Leaves.png
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Textures\Sand.png
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Textures\Stone.png
+c:\2w-reborn\voxceleron2-engine\build\x64\Release\Resources\Textures\Wood.png

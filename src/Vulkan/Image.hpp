@@ -1,5 +1,5 @@
 #pragma once
-#include <GLM/glm.hpp>
+#include <glm/glm.hpp>
 #include "Device.hpp"
 #include "Command Buffer.hpp"
 #include "Sampler.hpp"

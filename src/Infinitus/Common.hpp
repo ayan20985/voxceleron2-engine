@@ -3,7 +3,7 @@
 #include <vector>
 #include <ctime>
 #include <random>
-#include <GLM/glm.hpp>
+#include <glm/glm.hpp>
 
 namespace Tetra
 {

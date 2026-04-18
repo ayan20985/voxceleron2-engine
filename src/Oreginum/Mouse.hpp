@@ -1,5 +1,5 @@
 #pragma once
-#include <GLM/glm.hpp>
+#include <glm/glm.hpp>
 #include <Windows.h>
 
 namespace Oreginum
